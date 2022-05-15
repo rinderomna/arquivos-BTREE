@@ -288,6 +288,80 @@ void funcionalidade2(string_t tipo_do_arquivo, string_t binario_entrada) {
     fclose(arq_entrada);
 }
 
+void funcionalidade3(string_t tipo_de_arquivo, string_t binario_entrada, int n) {
+    FILE *arq_entrada = fopen(binario_entrada, "rb");
+    if (!arq_entrada) {
+        printf("Falha no processamento do arquivo.\n");
+        return;
+    }
+    string_t *nome_campos = (string_t*)malloc(n * sizeof(string_t));
+    string_t *valor_campos = (string_t*)malloc(n * sizeof(string_t));
+    for (int i = 0; i < n; i++) {
+        nome_campos[i] = read_until(stdin, ' ', NULL);
+        valor_campos[i] = read_until(stdin, ' ', NULL);
+        remove_quotes(valor_campos[i]);
+    }
+
+    if (compare_strings_case_sensitive(tipo_de_arquivo, "tipo1") == 0) {
+        busca_parametrizada1(arq_entrada, nome_campos, valor_campos, n);
+    } else if (compare_strings_case_sensitive(tipo_de_arquivo, "tipo2") == 0){
+        busca_parametrizada2(arq_entrada, nome_campos, valor_campos, n);
+    } else {
+        printf("Tipo de arquivo não existente\n");
+    }
+
+
+
+
+
+
+}
+
+void busca_parametrizada1(FILE *arq_entrada, string_t *nome_campos, string_t *valor_campos, int n) {
+    cabecalho1_t *c1 = criar_cabecalho1();
+
+    ler_cabecalho1_de_arquivo(c1, arq_entrada);
+
+    int proxRRN = get_proxRRN1(c1);
+    char status = get_status1(c1);
+
+    destruir_cabecalho1(c1);
+    
+    if (status == '0') {
+        printf("Falha no processamento do arquivo.\n");
+        fclose(arq_entrada);
+
+        return;
+    }
+
+    if (proxRRN == 0) {
+        printf("Registro inexistente\n");
+        fclose(arq_entrada);
+
+        return;
+    }
+
+    //string_t campos_validos[] = {"id", "ano", "qtt", "sigla", "cidade", "marca", "modelo"};
+    for (int i = 0; i < proxRRN; i++) {
+        registro1_t *reg1 = criar_registro1();
+
+        ler_registro1(reg1, arq_entrada);
+        
+        char removido = get_removido1(reg1);
+
+        if (removido == '0') {
+            if (compare_strings_case_sensitive(nome_campos[0], [j]) == 0);
+        }
+
+        destruir_registro1(reg1, 1);
+    }
+
+
+
+}
+
+
+
 void funcionalidade4(string_t tipo_de_arquivo, string_t binario_entrada, int RRN) {
     FILE *arq_entrada = NULL;
 

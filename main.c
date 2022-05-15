@@ -1,3 +1,4 @@
+// oi
 #include <stdio.h>
 #include <stdlib.h>
 #include "funcionalidades.h"
@@ -21,6 +22,7 @@ int main() {
     string_t binario_saida;
     string_t binario_entrada;
     int RRN;
+    int n;
 
     switch (codigo_de_funcionalidade) {
         case 1:
@@ -37,6 +39,9 @@ int main() {
             funcionalidade2(tipo_do_arquivo, binario_entrada);
             break;
         case 3:
+            tipo_do_arquivo = campos_de_comando[1];
+            binario_entrada = campos_de_comando[2];
+            n = atoi(campos_de_comando[3]);
             break;
         case 4:
             tipo_do_arquivo = campos_de_comando[1];

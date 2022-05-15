@@ -157,11 +157,13 @@ string_t read_until(FILE *stream, symbol_t separator, int *has_EOF) {
         if (c != '\n' && c != '\r' && c != separator && c != EOF) {
             *(line + n_chars - 1) = c;
 
-            *has_EOF = 0;
+            if (has_EOF) {
+                *has_EOF = 0;
+            }
         } else {
             *(line + n_chars - 1) = '\0';
 
-            if (c == EOF) *has_EOF = 1;
+            if (c == EOF && has_EOF) *has_EOF = 1;
         }
     } while (c != '\n' && c != '\r' && c != separator && c != EOF);
 
