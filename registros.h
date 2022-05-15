@@ -14,6 +14,7 @@ registro1_t *criar_registro1();
 void escrever_registro1_em_arquivo(registro1_t *reg1, FILE *fp);
 
 // Lê 97 bytes preenchendo registro de tamanho fixo
+// Precisa liberar string ao destruir registro lido
 void ler_registro1(registro1_t *reg1, FILE *fp);
 
 // Imprime informações de um registro em formato padrão
@@ -55,6 +56,7 @@ int escrever_registro2_em_arquivo(registro2_t *reg2, FILE *fp);
 int ler_registro2(registro2_t *reg2, FILE *fp);
 
 // Imprime informações de um registro em formato padrão
+// Precisa liberar string ao destruir registro lido
 void imprimir_reg2(registro2_t *reg2);
 
 // Libera a memória relacionada a registro tipo 2
