@@ -298,7 +298,7 @@ void funcionalidade3(string_t tipo_de_arquivo, string_t binario_entrada, int n) 
     string_t *valor_campos = (string_t*)malloc(n * sizeof(string_t));
     for (int i = 0; i < n; i++) {
         nome_campos[i] = read_until(stdin, ' ', NULL);
-        valor_campos[i] = read_until(stdin, ' ', NULL);
+        valor_campos[i] = read_until(stdin, '\n', NULL);
         remove_quotes(valor_campos[i]);
     }
 
@@ -309,10 +309,6 @@ void funcionalidade3(string_t tipo_de_arquivo, string_t binario_entrada, int n) 
     } else {
         printf("Tipo de arquivo não existente\n");
     }
-
-
-
-
 
 
 }
@@ -341,7 +337,7 @@ void busca_parametrizada1(FILE *arq_entrada, string_t *nome_campos, string_t *va
         return;
     }
 
-    //string_t campos_validos[] = {"id", "ano", "qtt", "sigla", "cidade", "marca", "modelo"};
+    string_t campos_validos[] = {"id", "ano", "qtt", "sigla", "cidade", "marca", "modelo"};
     for (int i = 0; i < proxRRN; i++) {
         registro1_t *reg1 = criar_registro1();
 
@@ -349,15 +345,142 @@ void busca_parametrizada1(FILE *arq_entrada, string_t *nome_campos, string_t *va
         
         char removido = get_removido1(reg1);
 
-        if (removido == '0') {
-            if (compare_strings_case_sensitive(nome_campos[0], [j]) == 0);
+        if (removido == '1') {
+            continue;
+        }
+
+        // Primeiramente, itero sobre o número de entradas, a fim de verificar se o registro atual possui todos os valores a serem buscados
+        // Em seguida, para cada iteração, preciso descobrir qual o nome do campo, iterando sobre um vetor com todos os nomes dos campos
+        // Após descobrir qual o nome do campo, verifico se o valor do campo do atual registro condiz com o valor do campo passado na entrada
+        // Após as 'n' iterações, se todos os valores da entrada condizerem com o registro atual, então encontrado==n, e irei imprimir o registro atual
+        short encontrado = 0;
+        for (int j = 0; j < n; j++) {
+            for (int k = 0; k < 7; k++) {
+                int num = 0;
+                if (compare_strings_case_sensitive(nome_campos[j], campos_validos[k]) == 0) {
+                    if (k < 3) {
+                        num = atoi(valor_campos[j]);
+                    }
+
+                    switch (k) {
+                    case 0:
+                        encontrado += (get_id1(reg1) == num);
+                        break;
+                    case 1:
+                        encontrado += (get_ano1(reg1) == num);
+                        break;
+                    case 2:
+                        encontrado += (get_qtt1(reg1) == num);
+                        break;
+                    case 3:
+                        encontrado += (compare_strings_case_sensitive(get_sigla1(reg1), valor_campos[j]) == 0);
+                        break;
+                    case 4:
+                        encontrado += (compare_strings_case_sensitive(get_cidade1(reg1), valor_campos[j]) == 0);
+                        break;
+                    case 5:
+                        encontrado += (compare_strings_case_sensitive(get_marca1(reg1), valor_campos[j]) == 0);
+                        break;
+                    case 6:
+                        encontrado += (compare_strings_case_sensitive(get_modelo1(reg1), valor_campos[j]) == 0);
+                        break;
+                    }
+                    break;
+                }
+            }
+        }
+        if (encontrado == n) {
+            imprimir_reg1(reg1);
         }
 
         destruir_registro1(reg1, 1);
     }
+}
 
 
+void busca_parametrizada2(FILE *arq_entrada, string_t *nome_campos, string_t *valor_campos, int n) {
 
+    cabecalho2_t *c2 = criar_cabecalho2();
+
+    ler_cabecalho2_de_arquivo(c2, arq_entrada);
+
+    long long int proxByteOffset = get_proxByteOffset2(c2);
+    
+    char status = get_status2(c2);
+
+    destruir_cabecalho2(c2);
+
+    if (status == '0') {
+        printf("Falha no processamento do arquivo.\n");
+        fclose(arq_entrada);
+
+        return;
+    }
+
+    if (proxByteOffset <= TAM_CAB_2) {
+        printf("Registro inexistente\n");
+        fclose(arq_entrada);
+
+        return;
+    }
+
+    long long int byteOffset_atual = TAM_CAB_2;
+
+    string_t campos_validos[] = {"id", "ano", "qtt", "sigla", "cidade", "marca", "modelo"};
+    while (byteOffset_atual < proxByteOffset) {
+        registro2_t *reg2 = criar_registro2();
+
+        int tam_reg = ler_registro2(reg2, arq_entrada);
+        byteOffset_atual += tam_reg;
+
+        char removido = get_removido2(reg2);
+
+        if (removido == '1') {
+            continue;
+        }
+
+        short encontrado = 0;
+        for (int j = 0; j < n; j++) {
+            for (int k = 0; k < 7; k++) {
+                int num = 0;
+                if (compare_strings_case_sensitive(nome_campos[j], campos_validos[k]) == 0) {
+                    if (k < 3) {
+                        num = atoi(valor_campos[j]);
+                    }
+
+                    switch (k) {
+                    case 0:
+                        encontrado += (get_id2(reg2) == num);
+                        break;
+                    case 1:
+                        encontrado += (get_ano2(reg2) == num);
+                        break;
+                    case 2:
+                        encontrado += (get_qtt2(reg2) == num);
+                        break;
+                    case 3:
+                        encontrado += !(compare_strings_case_sensitive(get_sigla2(reg2), valor_campos[j]) == 0);
+                        break;
+                    case 4:
+                        encontrado += !(compare_strings_case_sensitive(get_cidade2(reg2), valor_campos[j]) == 0);
+                        break;
+                    case 5:
+                        encontrado += !(compare_strings_case_sensitive(get_marca2(reg2), valor_campos[j]) == 0);
+                        break;
+                    case 6:
+                        encontrado += !(compare_strings_case_sensitive(get_modelo2(reg2), valor_campos[j]) == 0);
+                        break;
+                    }
+                    break;
+                }
+            }
+        }
+        if (encontrado == n) {
+            imprimir_reg2(reg2);
+        }
+
+        destruir_registro2(reg2, 1);
+    }
 }
 
 

@@ -1,4 +1,3 @@
-// oi
 #include <stdio.h>
 #include <stdlib.h>
 #include "funcionalidades.h"
@@ -42,6 +41,7 @@ int main() {
             tipo_do_arquivo = campos_de_comando[1];
             binario_entrada = campos_de_comando[2];
             n = atoi(campos_de_comando[3]);
+            funcionalidade3(tipo_do_arquivo, binario_entrada, n);
             break;
         case 4:
             tipo_do_arquivo = campos_de_comando[1];

@@ -79,6 +79,9 @@ int compare_strings_non_case_sensitive(string_t str1, string_t str2) {
 }
 
 int compare_strings_case_sensitive(string_t str1, string_t str2) {
+    if(str1 == NULL|| str2 == NULL) {
+        return -1;
+    }
     int diff = 0;
 
     int i = 0;
@@ -148,12 +151,12 @@ string_t read_until(FILE *stream, symbol_t separator, int *has_EOF) {
 
         if (c != '\n' && c != '\r' && c != separator && c != EOF) {
             *(line + n_chars - 1) = c;
-
-            *has_EOF = 0;
+            if(has_EOF)
+                *has_EOF = 0;
         } else {
             *(line + n_chars - 1) = '\0';
 
-            if (c == EOF) *has_EOF = 1;
+            if (c == EOF && has_EOF) *has_EOF = 1;
         }
     } while (c != '\n' && c != '\r' && c != separator && c != EOF);
 
@@ -287,11 +290,11 @@ void destroy_string_array(string_t *string_array, int n_elems) {
 }
 
 void remove_quotes(string_t string) {
-    if(string[0] != "\"")
+    if(string[0] != '\"')
         return;
     
     int size = string_length(string);
-    for(int i = 0; i < size - 2; i++) {
+    for(int i = 0; i < size - 1; i++) {
         string[i] = string[i+1];
     }
     string[size - 2] = '\0';
