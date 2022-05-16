@@ -552,7 +552,7 @@ void set_modelo1(registro1_t *reg1, string_t modelo) {
 }
 
 string_t get_modelo1(registro1_t *reg1) {
-    return reg1->sigla;
+    return reg1->modelo;
 }
 
 // para tipo 2:
@@ -626,5 +626,5 @@ void set_modelo2(registro2_t *reg2, string_t modelo) {
 }
 
 string_t get_modelo2(registro2_t *reg2) {
-    return reg2->sigla;
+    return reg2->modelo;
 }

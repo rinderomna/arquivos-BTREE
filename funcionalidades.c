@@ -294,8 +294,9 @@ void funcionalidade3(string_t tipo_de_arquivo, string_t binario_entrada, int n) 
         printf("Falha no processamento do arquivo.\n");
         return;
     }
-    string_t *nome_campos = (string_t*)malloc(n * sizeof(string_t));
-    string_t *valor_campos = (string_t*)malloc(n * sizeof(string_t));
+    string_t *nome_campos = (string_t *)malloc(n * sizeof(string_t));
+    string_t *valor_campos = (string_t *)malloc(n * sizeof(string_t));
+
     for (int i = 0; i < n; i++) {
         nome_campos[i] = read_until(stdin, ' ', NULL);
         valor_campos[i] = read_until(stdin, '\n', NULL);
@@ -310,7 +311,10 @@ void funcionalidade3(string_t tipo_de_arquivo, string_t binario_entrada, int n) 
         printf("Tipo de arquivo não existente\n");
     }
 
+    fclose(arq_entrada);
 
+    destroy_string_array(nome_campos, n);
+    destroy_string_array(valor_campos, n);
 }
 
 void busca_parametrizada1(FILE *arq_entrada, string_t *nome_campos, string_t *valor_campos, int n) {
@@ -325,14 +329,12 @@ void busca_parametrizada1(FILE *arq_entrada, string_t *nome_campos, string_t *va
     
     if (status == '0') {
         printf("Falha no processamento do arquivo.\n");
-        fclose(arq_entrada);
 
         return;
     }
 
     if (proxRRN == 0) {
         printf("Registro inexistente\n");
-        fclose(arq_entrada);
 
         return;
     }
@@ -346,6 +348,8 @@ void busca_parametrizada1(FILE *arq_entrada, string_t *nome_campos, string_t *va
         char removido = get_removido1(reg1);
 
         if (removido == '1') {
+            destruir_registro1(reg1, 1);
+
             continue;
         }
 
@@ -363,29 +367,29 @@ void busca_parametrizada1(FILE *arq_entrada, string_t *nome_campos, string_t *va
                     }
 
                     switch (k) {
-                    case 0:
-                        encontrado += (get_id1(reg1) == num);
-                        break;
-                    case 1:
-                        encontrado += (get_ano1(reg1) == num);
-                        break;
-                    case 2:
-                        encontrado += (get_qtt1(reg1) == num);
-                        break;
-                    case 3:
-                        encontrado += (compare_strings_case_sensitive(get_sigla1(reg1), valor_campos[j]) == 0);
-                        break;
-                    case 4:
-                        encontrado += (compare_strings_case_sensitive(get_cidade1(reg1), valor_campos[j]) == 0);
-                        break;
-                    case 5:
-                        encontrado += (compare_strings_case_sensitive(get_marca1(reg1), valor_campos[j]) == 0);
-                        break;
-                    case 6:
-                        encontrado += (compare_strings_case_sensitive(get_modelo1(reg1), valor_campos[j]) == 0);
-                        break;
+                        case 0:
+                            encontrado += (get_id1(reg1) == num);
+                            break;
+                        case 1:
+                            encontrado += (get_ano1(reg1) == num);
+                            break;
+                        case 2:
+                            encontrado += (get_qtt1(reg1) == num);
+                            break;
+                        case 3:
+                            encontrado += (compare_strings_case_sensitive(get_sigla1(reg1), valor_campos[j]) == 0);
+                            break;
+                        case 4:
+                            encontrado += (compare_strings_case_sensitive(get_cidade1(reg1), valor_campos[j]) == 0);
+                            break;
+                        case 5:
+                            encontrado += (compare_strings_case_sensitive(get_marca1(reg1), valor_campos[j]) == 0);
+                            break;
+                        case 6:
+                            print_string(get_modelo1(reg1));
+                            encontrado += (compare_strings_case_sensitive(get_modelo1(reg1), valor_campos[j]) == 0);
+                            break;
                     }
-                    break;
                 }
             }
         }
@@ -399,7 +403,6 @@ void busca_parametrizada1(FILE *arq_entrada, string_t *nome_campos, string_t *va
 
 
 void busca_parametrizada2(FILE *arq_entrada, string_t *nome_campos, string_t *valor_campos, int n) {
-
     cabecalho2_t *c2 = criar_cabecalho2();
 
     ler_cabecalho2_de_arquivo(c2, arq_entrada);
@@ -412,14 +415,12 @@ void busca_parametrizada2(FILE *arq_entrada, string_t *nome_campos, string_t *va
 
     if (status == '0') {
         printf("Falha no processamento do arquivo.\n");
-        fclose(arq_entrada);
 
         return;
     }
 
     if (proxByteOffset <= TAM_CAB_2) {
         printf("Registro inexistente\n");
-        fclose(arq_entrada);
 
         return;
     }
@@ -436,6 +437,8 @@ void busca_parametrizada2(FILE *arq_entrada, string_t *nome_campos, string_t *va
         char removido = get_removido2(reg2);
 
         if (removido == '1') {
+            destruir_registro2(reg2, 1);
+
             continue;
         }
 
@@ -449,29 +452,28 @@ void busca_parametrizada2(FILE *arq_entrada, string_t *nome_campos, string_t *va
                     }
 
                     switch (k) {
-                    case 0:
-                        encontrado += (get_id2(reg2) == num);
-                        break;
-                    case 1:
-                        encontrado += (get_ano2(reg2) == num);
-                        break;
-                    case 2:
-                        encontrado += (get_qtt2(reg2) == num);
-                        break;
-                    case 3:
-                        encontrado += !(compare_strings_case_sensitive(get_sigla2(reg2), valor_campos[j]) == 0);
-                        break;
-                    case 4:
-                        encontrado += !(compare_strings_case_sensitive(get_cidade2(reg2), valor_campos[j]) == 0);
-                        break;
-                    case 5:
-                        encontrado += !(compare_strings_case_sensitive(get_marca2(reg2), valor_campos[j]) == 0);
-                        break;
-                    case 6:
-                        encontrado += !(compare_strings_case_sensitive(get_modelo2(reg2), valor_campos[j]) == 0);
-                        break;
+                        case 0:
+                            encontrado += (get_id2(reg2) == num);
+                            break;
+                        case 1:
+                            encontrado += (get_ano2(reg2) == num);
+                            break;
+                        case 2:
+                            encontrado += (get_qtt2(reg2) == num);
+                            break;
+                        case 3:
+                            encontrado += (compare_strings_case_sensitive(get_sigla2(reg2), valor_campos[j]) == 0);
+                            break;
+                        case 4:
+                            encontrado += (compare_strings_case_sensitive(get_cidade2(reg2), valor_campos[j]) == 0);
+                            break;
+                        case 5:
+                            encontrado += (compare_strings_case_sensitive(get_marca2(reg2), valor_campos[j]) == 0);
+                            break;
+                        case 6:
+                            encontrado += (compare_strings_case_sensitive(get_modelo2(reg2), valor_campos[j]) == 0);
+                            break;
                     }
-                    break;
                 }
             }
         }
