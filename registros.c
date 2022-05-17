@@ -5,21 +5,10 @@
 #include "cabecalhos.h"
 #include "str.h"
 
-struct registro1_ {
+struct registro_ {
     char removido;
-    int prox;
-    int id;
-    int ano;
-    int qtt;
-    string_t sigla;
-    string_t cidade;
-    string_t marca;
-    string_t modelo;
-};
-
-struct registro2_ {
-    char removido;
-    long long int prox;
+    int proxRRN;
+    long long int proxByteOffset;
     int id;
     int ano;
     int qtt;
@@ -40,63 +29,36 @@ char *cria_lixo(int tamLixo) {
     return lixo;
 }
 
-registro1_t *criar_registro1() {
-    registro1_t *reg1 = (registro1_t *)malloc(1 * sizeof(registro1_t));
+registro_t *criar_registro() {
+    registro_t *reg = (registro_t *)malloc(1 * sizeof(registro_t));
 
-    reg1->removido = '0';
-    reg1->prox = -1;
-    reg1->id = -1;
-    reg1->ano = -1;
-    reg1->qtt = -1;
-    reg1->cidade = NULL;
-    reg1->marca = NULL;
-    reg1->modelo = NULL;
+    reg->removido = '0';
+    reg->proxRRN = -1;
+    reg->proxByteOffset = -1;
+    reg->id = -1;
+    reg->ano = -1;
+    reg->qtt = -1;
+    reg->cidade = NULL;
+    reg->marca = NULL;
+    reg->modelo = NULL;
 
-    return reg1;
+    return reg;
 }
 
-registro2_t *criar_registro2() {
-    registro2_t *reg2 = (registro2_t *)malloc(1 * sizeof(registro2_t));
-
-    reg2->removido = '0';
-    reg2->prox = -1;
-    reg2->id = -1;
-    reg2->ano = -1;
-    reg2->qtt = -1;
-    reg2->cidade = NULL;
-    reg2->marca = NULL;
-    reg2->modelo = NULL;
-
-    return reg2;
-}
-
-void destruir_registro1(registro1_t *reg1, int liberar_strings) {
-    if (reg1) {
+void destruir_registro(registro_t *reg, int liberar_strings) {
+    if (reg) {
         if (liberar_strings) {
-            destroy_string(reg1->sigla);
-            destroy_string(reg1->cidade);
-            destroy_string(reg1->marca);
-            destroy_string(reg1->modelo);
+            destroy_string(reg->sigla);
+            destroy_string(reg->cidade);
+            destroy_string(reg->marca);
+            destroy_string(reg->modelo);
         }
 
-        free(reg1);
+        free(reg);
     }
 }
 
-void destruir_registro2(registro2_t *reg2, int liberar_strings) {
-    if (reg2) {
-        if (liberar_strings) {
-            destroy_string(reg2->sigla);
-            destroy_string(reg2->cidade);
-            destroy_string(reg2->marca);
-            destroy_string(reg2->modelo);
-        }
-
-        free(reg2);
-    }
-}
-
-void escrever_registro1_em_arquivo(registro1_t *reg1, FILE *fp) { 
+void escrever_registro1_em_arquivo(registro_t *reg1, FILE *fp) { 
         int tamanho_registro_atual = 0;
 
         // Adicionar campo de 1 byte 'removido':
@@ -104,7 +66,7 @@ void escrever_registro1_em_arquivo(registro1_t *reg1, FILE *fp) {
         tamanho_registro_atual += 1;
 
         // Adicionar campo de próximo removido:
-        fwrite(&reg1->prox, sizeof(int), 1, fp);
+        fwrite(&reg1->proxRRN, sizeof(int), 1, fp);
         tamanho_registro_atual += sizeof(int);
     
         // Adicionar campo id, o qual é obrigatório:
@@ -187,7 +149,7 @@ void escrever_registro1_em_arquivo(registro1_t *reg1, FILE *fp) {
 }
 
 // Retorna tamanho do registro
-int escrever_registro2_em_arquivo(registro2_t *reg2, FILE *fp) {
+int escrever_registro2_em_arquivo(registro_t *reg2, FILE *fp) {
         // Contabilizar tamanho do registro depois do quinto byte:
         int tamanho_registro_atual = 0;
         tamanho_registro_atual += 8; // prox - long long int - 8 bytes
@@ -224,7 +186,7 @@ int escrever_registro2_em_arquivo(registro2_t *reg2, FILE *fp) {
         fwrite(&tamanho_registro_atual, sizeof(int), 1, fp);
 
         // Adicionar campo de próximo removido:
-        fwrite(&reg2->prox, sizeof(long long int), 1, fp);
+        fwrite(&reg2->proxByteOffset, sizeof(long long int), 1, fp);
     
         // Adicionar campo id, o qual é obrigatório:
         fwrite(&reg2->id, sizeof(int), 1, fp);
@@ -287,22 +249,32 @@ int escrever_registro2_em_arquivo(registro2_t *reg2, FILE *fp) {
         return tamanho_registro_atual + 5; 
 }
 
-void ler_registro1(registro1_t *reg1, FILE *fp) {
-    int tam_reg = 0;
+int ler_registro(registro_t *reg, int tipo_do_registro, FILE *fp) {
+    int tam_atual_reg1 = 0;
+    int tam_atual_reg2 = 0;
+    int tam_total_reg2 = 0;
 
-    fread(&reg1->removido, sizeof(char), 1, fp);
-    fread(&reg1->prox, sizeof(int), 1, fp);
-    fread(&reg1->id, sizeof(int), 1, fp);
-    fread(&reg1->ano, sizeof(int), 1, fp);
-    fread(&reg1->qtt, sizeof(int), 1, fp);
+    fread(&reg->removido, sizeof(char), 1, fp);
+    if (tipo_do_registro == 1) {
+        fread(&reg->proxRRN, sizeof(int), 1, fp);
+    } else if (tipo_do_registro == 2) {
+        fread(&tam_total_reg2, sizeof(int), 1, fp);
+        fread(&reg->proxByteOffset, sizeof(long long int), 1, fp);
+    }
+    fread(&reg->id, sizeof(int), 1, fp);
+    fread(&reg->ano, sizeof(int), 1, fp);
+    fread(&reg->qtt, sizeof(int), 1, fp);
+
+    tam_total_reg2 += 5; // Incluindo os 5 primeiros bytes iniciais
 
     // Alocando espaço para sigla e lendo:
     string_t sigla = (string_t)malloc(3 * sizeof(symbol_t));
     fread(sigla, sizeof(char), 2, fp);
     sigla[2] = '\0';
-    reg1->sigla = sigla;
+    reg->sigla = sigla;
 
-    tam_reg += 19; // Soma dos campos de tamanho fixo
+    tam_atual_reg1 += 19; // Soma dos campos de tamanho fixo
+    tam_atual_reg2 += 27; // Soma dos campos de tamanho fixo
 
     int n_lidos = 0;
     int proximo_campo_valido = 1;
@@ -311,13 +283,17 @@ void ler_registro1(registro1_t *reg1, FILE *fp) {
         // * Foram lidos menos de 3 campos e;
         // * Tem pelo menos mais 5 bytes cabendo no tamanho do registro
         // * O código do próximo campo testado é válido
-    while (n_lidos < 3 && tam_reg + 5 < TAM_REG1 && proximo_campo_valido) {
+    while (n_lidos < 3 &&
+            ((tam_atual_reg1 + 5 < TAM_REG1 && tipo_do_registro == 1) ||
+             (tam_atual_reg2 + 5 < tam_total_reg2 && tipo_do_registro == 2)) &&
+            proximo_campo_valido) {
         int tamanho_do_campo;
         fread(&tamanho_do_campo, sizeof(int), 1, fp);
         char codigo_campo;
         fread(&codigo_campo, sizeof(char), 1, fp);
         
-        tam_reg += (4 + 1);
+        tam_atual_reg1 += (4 + 1);
+        tam_atual_reg2 += (4 + 1);
 
         if (codigo_campo != '0' && codigo_campo != '1' && codigo_campo != '2') {
             proximo_campo_valido = 0;
@@ -330,148 +306,59 @@ void ler_registro1(registro1_t *reg1, FILE *fp) {
         fread(campo, sizeof(char), tamanho_do_campo, fp);
         campo[tamanho_do_campo] = '\0';
 
-        tam_reg += tamanho_do_campo;
+        tam_atual_reg1 += tamanho_do_campo;
+        tam_atual_reg2 += tamanho_do_campo;
 
         if (codigo_campo == '0') {
-            reg1->cidade = campo;
+            reg->cidade = campo;
         } else if (codigo_campo == '1') {
-            reg1->marca = campo;
+            reg->marca = campo;
         } else if (codigo_campo == '2') {
-            reg1->modelo = campo;
+            reg->modelo = campo;
         }
     }
 
+    int tamanho_total_registro = 0;
     // Posicionando o ponteiro no possível próximo registro:
-    fseek(fp, (TAM_REG1 - tam_reg), SEEK_CUR);
-}
-
-int ler_registro2(registro2_t *reg2, FILE *fp) {
-    int tam_reg = 0;
-    int tam_total_reg = 0;
-
-    fread(&reg2->removido, sizeof(char), 1, fp);
-    fread(&tam_total_reg, sizeof(int), 1, fp);
-    fread(&reg2->prox, sizeof(long long int), 1, fp);
-    fread(&reg2->id, sizeof(int), 1, fp);
-    fread(&reg2->ano, sizeof(int), 1, fp);
-    fread(&reg2->qtt, sizeof(int), 1, fp);
-
-    tam_total_reg += 5; // Incluindo os 5 primeiros bytes iniciais
-
-    // Alocando espaço para sigla e lendo:
-    string_t sigla = (string_t)malloc(3 * sizeof(symbol_t));
-    fread(sigla, sizeof(char), 2, fp);
-    sigla[2] = '\0';
-    reg2->sigla = sigla;
-
-    tam_reg += 27; // Soma dos campos de tamanho fixo
-
-    int n_lidos = 0;
-    int proximo_campo_valido = 1;
-
-    // Continua lendo enquanto:
-        // * Foram lidos menos de 3 campos e;
-        // * Tem pelo menos mais 5 bytes cabendo no tamanho do registro
-        // * O código do próximo campos testado é válido
-    while (n_lidos < 3 && tam_reg + 5 < tam_total_reg && proximo_campo_valido) {
-        int tamanho_do_campo;
-        fread(&tamanho_do_campo, sizeof(int), 1, fp);
-        char codigo_campo;
-        fread(&codigo_campo, sizeof(char), 1, fp);
-        
-        tam_reg += (4 + 1);
-
-        if (codigo_campo != '0' && codigo_campo != '1' && codigo_campo != '2') {
-            proximo_campo_valido = 0;
-            continue;
-        }
-
-        n_lidos += 1; // Mais um campo sendo lido
-
-        string_t campo = (string_t)malloc((tamanho_do_campo + 1) * sizeof(symbol_t));
-        fread(campo, sizeof(char), tamanho_do_campo, fp);
-        campo[tamanho_do_campo] = '\0';
-
-        tam_reg += tamanho_do_campo;
-
-        if (codigo_campo == '0') {
-            reg2->cidade = campo;
-        } else if (codigo_campo == '1') {
-            reg2->marca = campo;
-        } else if (codigo_campo == '2') {
-            reg2->modelo = campo;
-        }
+    if (tipo_do_registro == 1) {
+        fseek(fp, (TAM_REG1 - tam_atual_reg1), SEEK_CUR);
+        tamanho_total_registro = TAM_REG1;
+    } else if (tipo_do_registro == 2) {
+        fseek(fp, (tam_total_reg2 - tam_atual_reg2), SEEK_CUR);
+        tamanho_total_registro = tam_total_reg2;
     }
 
-    // Posicionando o ponteiro no possível próximo registro:
-    fseek(fp, (tam_total_reg - tam_reg), SEEK_CUR);
-
-    return tam_total_reg;
+    return tamanho_total_registro;
 }
 
-void imprimir_reg1(registro1_t *reg1) {
+void imprimir_registro(registro_t *reg) {
     printf("MARCA DO VEICULO: ");
-    if (reg1->marca && string_length(reg1->marca) > 0) {
-        print_string(reg1->marca);
+    if (reg->marca && string_length(reg->marca) > 0) {
+        print_string(reg->marca);
     } else {
         printf("NAO PREENCHIDO");
     }
     printf("\nMODELO DO VEICULO: ");
-    if (reg1->modelo && string_length(reg1->modelo) > 0) {
-        print_string(reg1->modelo);
+    if (reg->modelo && string_length(reg->modelo) > 0) {
+        print_string(reg->modelo);
     } else {
         printf("NAO PREENCHIDO");
     }
     printf("\nANO DE FABRICACAO: ");
-    if (reg1->ano != -1) {
-        printf("%d", reg1->ano);
+    if (reg->ano != -1) {
+        printf("%d", reg->ano);
     } else {
         printf("NAO PREENCHIDO");
     }
     printf("\nNOME DA CIDADE: ");
-    if (reg1->cidade && string_length(reg1->cidade) > 0) {
-        print_string(reg1->cidade);
+    if (reg->cidade && string_length(reg->cidade) > 0) {
+        print_string(reg->cidade);
     } else {
         printf("NAO PREENCHIDO");
     }
     printf("\nQUANTIDADE DE VEICULOS: ");
-    if (reg1->qtt != -1) {
-        printf("%d", reg1->qtt);
-    } else {
-        printf("NAO PREENCHIDO");
-    }
-
-    new_lines(2);
-}
-
-void imprimir_reg2(registro2_t *reg2) {
-    printf("MARCA DO VEICULO: ");
-    if (reg2->marca && string_length(reg2->marca) > 0) {
-        print_string(reg2->marca);
-    } else {
-        printf("NAO PREENCHIDO");
-    }
-    printf("\nMODELO DO VEICULO: ");
-    if (reg2->modelo && string_length(reg2->modelo) > 0) {
-        print_string(reg2->modelo);
-    } else {
-        printf("NAO PREENCHIDO");
-    }
-    printf("\nANO DE FABRICACAO: ");
-    if (reg2->ano != -1) {
-        printf("%d", reg2->ano);
-    } else {
-        printf("NAO PREENCHIDO");
-    }
-    printf("\nNOME DA CIDADE: ");
-    if (reg2->cidade && string_length(reg2->cidade) > 0) {
-        print_string(reg2->cidade);
-    } else {
-        printf("NAO PREENCHIDO");
-    }
-    printf("\nQUANTIDADE DE VEICULOS: ");
-    if (reg2->qtt != -1) {
-        printf("%d", reg2->qtt);
+    if (reg->qtt != -1) {
+        printf("%d", reg->qtt);
     } else {
         printf("NAO PREENCHIDO");
     }
@@ -481,150 +368,82 @@ void imprimir_reg2(registro2_t *reg2) {
 
 // Getters e Setters:
 
-// para tipo 1:
-
-void set_removido1(registro1_t *reg1, char removido) {
-    reg1->removido = removido;
+void set_removido(registro_t *reg, char removido) {
+    reg->removido = removido;
 }
 
-char get_removido1(registro1_t *reg1) {
-    return reg1->removido;
+char get_removido(registro_t *reg) {
+    return reg->removido;
 }
 
-void set_prox1(registro1_t *reg1, int prox) {
-    reg1->prox = prox;
+void set_proxRRN_registro(registro_t *reg, int proxRRN) {
+    reg->proxRRN = proxRRN;
 }
 
-int get_prox1(registro1_t *reg1) {
-    return reg1->prox;
+int get_proxRRN_registro(registro_t *reg) {
+    return reg->proxRRN;
 }
 
-void set_id1(registro1_t *reg1, int id) {
-    reg1->id = id;
+void set_proxByteOffset_registro(registro_t *reg, long long int proxByteOffset) {
+    reg->proxByteOffset = proxByteOffset;
 }
 
-int get_id1(registro1_t *reg1) {
-    return reg1->id;
+long long int get_proxByteOffset_registro(registro_t *reg) {
+    return reg->proxByteOffset;
 }
 
-void set_ano1(registro1_t *reg1, int ano) {
-    reg1->ano = ano;
+void set_id(registro_t *reg, int id) {
+    reg->id = id;
 }
 
-int get_ano1(registro1_t *reg1) {
-    return reg1->ano;
+int get_id(registro_t *reg) {
+    return reg->id;
 }
 
-void set_qtt1(registro1_t *reg1, int qtt) {
-    reg1->qtt = qtt;
+void set_ano(registro_t *reg, int ano) {
+    reg->ano = ano;
 }
 
-int get_qtt1(registro1_t *reg1) {
-    return reg1->qtt;
+int get_ano(registro_t *reg) {
+    return reg->ano;
 }
 
-void set_sigla1(registro1_t *reg1, string_t sigla) {
-    reg1->sigla = sigla;
+void set_qtt(registro_t *reg, int qtt) {
+    reg->qtt = qtt;
 }
 
-string_t get_sigla1(registro1_t *reg1) {
-    return reg1->sigla;
+int get_qtt(registro_t *reg) {
+    return reg->qtt;
 }
 
-void set_cidade1(registro1_t *reg1, string_t cidade) {
-    reg1->cidade = cidade;
+void set_sigla(registro_t *reg, string_t sigla) {
+    reg->sigla = sigla;
 }
 
-string_t get_cidade1(registro1_t *reg1) {
-    return reg1->cidade;
+string_t get_sigla(registro_t *reg) {
+    return reg->sigla;
 }
 
-void set_marca1(registro1_t *reg1, string_t marca) {
-    reg1->marca = marca;
+void set_cidade(registro_t *reg, string_t cidade) {
+    reg->cidade = cidade;
 }
 
-string_t get_marca1(registro1_t *reg1) {
-    return reg1->marca;
+string_t get_cidade(registro_t *reg) {
+    return reg->cidade;
 }
 
-void set_modelo1(registro1_t *reg1, string_t modelo) {
-    reg1->modelo = modelo;
+void set_marca(registro_t *reg, string_t marca) {
+    reg->marca = marca;
 }
 
-string_t get_modelo1(registro1_t *reg1) {
-    return reg1->modelo;
+string_t get_marca(registro_t *reg) {
+    return reg->marca;
 }
 
-// para tipo 2:
-
-void set_removido2(registro2_t *reg2, char removido) {
-    reg2->removido = removido;
+void set_modelo(registro_t *reg, string_t modelo) {
+    reg->modelo = modelo;
 }
 
-char get_removido2(registro2_t *reg2) {
-    return reg2->removido;
-}
-
-void set_prox2(registro2_t *reg2, long long int prox) {
-    reg2->prox = prox;
-}
-
-long long int get_prox2(registro2_t *reg2) {
-    return reg2->prox;
-}
-
-void set_id2(registro2_t *reg2, int id) {
-    reg2->id = id;
-}
-
-int get_id2(registro2_t *reg2) {
-    return reg2->id;
-}
-
-void set_ano2(registro2_t *reg2, int ano) {
-    reg2->ano = ano;
-}
-
-int get_ano2(registro2_t *reg2) {
-    return reg2->ano;
-}
-
-void set_qtt2(registro2_t *reg2, int qtt) {
-    reg2->qtt = qtt;
-}
-
-int get_qtt2(registro2_t *reg2) {
-    return reg2->qtt;
-}
-
-void set_sigla2(registro2_t *reg2, string_t sigla) {
-    reg2->sigla = sigla;
-}
-
-string_t get_sigla2(registro2_t *reg2) {
-    return reg2->sigla;
-}
-
-void set_cidade2(registro2_t *reg2, string_t cidade) {
-    reg2->cidade = cidade;
-}
-
-string_t get_cidade2(registro2_t *reg2) {
-    return reg2->cidade;
-}
-
-void set_marca2(registro2_t *reg2, string_t marca) {
-    reg2->marca = marca;
-}
-
-string_t get_marca2(registro2_t *reg2) {
-    return reg2->marca;
-}
-
-void set_modelo2(registro2_t *reg2, string_t modelo) {
-    reg2->modelo = modelo;
-}
-
-string_t get_modelo2(registro2_t *reg2) {
-    return reg2->modelo;
+string_t get_modelo(registro_t *reg) {
+    return reg->modelo;
 }

@@ -2,83 +2,46 @@
 
 #define TAM_REG1 97
 
-typedef struct registro1_ registro1_t;
-typedef struct registro2_ registro2_t;
+typedef struct registro_ registro_t;
 
-/* Funcões para registro tipo 1 */
+// Aloca e retorna registro inicializado com valores padrão
+registro_t *criar_registro();
 
-// Aloca e retorna registro tipo 1 inicializado com valores padrão
-registro1_t *criar_registro1();
+// Libera a memória relacionada ao registro
+// Flag booleana para liberar strings ou não
+void destruir_registro(registro_t *reg, int liberar_strings);
 
 // Escreve registro tipo 1 em arquivo já aberto para escrita
-void escrever_registro1_em_arquivo(registro1_t *reg1, FILE *fp);
-
-// Lê 97 bytes preenchendo registro de tamanho fixo
-// Precisa liberar string ao destruir registro lido
-void ler_registro1(registro1_t *reg1, FILE *fp);
-
-// Imprime informações de um registro em formato padrão
-void imprimir_reg1(registro1_t *reg1);
-
-// Libera a memória relacionada a registro tipo 1.
-// Flag booleana para liberar strings ou não
-void destruir_registro1(registro1_t *reg1, int liberar_strings);
-
-// Getters e Setters:
-void set_removido1(registro1_t *reg1, char removido);
-char get_removido1(registro1_t *reg1);
-void set_prox1(registro1_t *reg1, int prox);
-int get_prox1(registro1_t *reg1);
-void set_id1(registro1_t *reg1, int id);
-int get_id1(registro1_t *reg1);
-void set_ano1(registro1_t *reg1, int ano);
-int get_ano1(registro1_t *reg1);
-void set_qtt1(registro1_t *reg1, int qtt);
-int get_qtt1(registro1_t *reg1);
-void set_sigla1(registro1_t *reg1, string_t sigla);
-string_t get_sigla1(registro1_t *reg1);
-void set_cidade1(registro1_t *reg1, string_t cidade);
-string_t get_cidade1(registro1_t *reg1);
-void set_marca1(registro1_t *reg1, string_t marca);
-string_t get_marca1(registro1_t *reg1);
-void set_modelo1(registro1_t *reg1, string_t modelo);
-string_t get_modelo1(registro1_t *reg1);
-
-/* Funcões para registro tipo 2 */
-
-// Aloca e retorna registro tipo 2 inicializado com valores padrão
-registro2_t *criar_registro2();
+void escrever_registro1_em_arquivo(registro_t *reg1, FILE *fp);
 
 // Escreve registro tipo 2 em arquivo já aberto para escrita
-int escrever_registro2_em_arquivo(registro2_t *reg2, FILE *fp);
+int escrever_registro2_em_arquivo(registro_t *reg2, FILE *fp);
 
 // Lê registro de tamanho fixo armazenado, retornando tamanho total do registro lido
-int ler_registro2(registro2_t *reg2, FILE *fp);
+// Precisa liberar string ao destruir registro lido
+int ler_registro(registro_t *reg, int tipo_do_registro, FILE *fp);
 
 // Imprime informações de um registro em formato padrão
-// Precisa liberar string ao destruir registro lido
-void imprimir_reg2(registro2_t *reg2);
-
-// Libera a memória relacionada a registro tipo 2
-// Flag booleana para liberar strings ou não
-void destruir_registro2(registro2_t *reg2, int liberar_strings);
+void imprimir_registro(registro_t *reg);
 
 // Getters e Setters:
-void set_removido2(registro2_t *reg2, char removido);
-char get_removido2(registro2_t *reg2);
-void set_prox2(registro2_t *reg2, long long int prox);
-long long int get_prox2(registro2_t *reg2);
-void set_id2(registro2_t *reg2, int id);
-int get_id2(registro2_t *reg2);
-void set_ano2(registro2_t *reg2, int ano);
-int get_ano2(registro2_t *reg2);
-void set_qtt2(registro2_t *reg2, int qtt);
-int get_qtt2(registro2_t *reg2);
-void set_sigla2(registro2_t *reg2, string_t sigla);
-string_t get_sigla2(registro2_t *reg2);
-void set_cidade2(registro2_t *reg2, string_t cidade);
-string_t get_cidade2(registro2_t *reg2);
-void set_marca2(registro2_t *reg2, string_t marca);
-string_t get_marca2(registro2_t *reg2);
-void set_modelo2(registro2_t *reg2, string_t modelo);
-string_t get_modelo2(registro2_t *reg2);
+void set_removido(registro_t *reg, char removido);
+char get_removido(registro_t *reg);
+void set_proxRRN(registro_t *reg, int proxRRN);
+int get_proxRRN(registro_t *reg);
+void set_proxByteOffset(registro_t *reg, long long int proxByteOffset);
+long long int get_proxByteOffset(registro_t *reg);
+void set_id(registro_t *reg, int id);
+int get_id(registro_t *reg);
+void set_ano(registro_t *reg, int ano);
+int get_ano(registro_t *reg);
+void set_qtt(registro_t *reg, int qtt);
+int get_qtt(registro_t *reg);
+void set_sigla(registro_t *reg, string_t sigla);
+string_t get_sigla(registro_t *reg);
+void set_cidade(registro_t *reg, string_t cidade);
+string_t get_cidade(registro_t *reg);
+void set_marca(registro_t *reg, string_t marca);
+string_t get_marca(registro_t *reg);
+void set_modelo(registro_t *reg, string_t modelo);
+string_t get_modelo(registro_t *reg);
