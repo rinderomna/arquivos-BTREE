@@ -250,7 +250,9 @@ void busca_parametrizada1(FILE *arq_entrada, string_t *nome_campos, string_t *va
         return;
     }
 
+    int n_registros_encontrados = 0;
     string_t campos_validos[] = {"id", "ano", "qtt", "sigla", "cidade", "marca", "modelo"};
+
     for (int i = 0; i < proxRRN; i++) {
         registro_t *reg = criar_registro();
 
@@ -268,6 +270,7 @@ void busca_parametrizada1(FILE *arq_entrada, string_t *nome_campos, string_t *va
         // Em seguida, para cada iteração, preciso descobrir qual o nome do campo, iterando sobre um vetor com todos os nomes dos campos
         // Após descobrir qual o nome do campo, verifico se o valor do campo do atual registro condiz com o valor do campo passado na entrada
         // Após as 'n' iterações, se todos os valores da entrada condizerem com o registro atual, então encontrado==n, e irei imprimir o registro atual
+
         short encontrado = 0;
         for (int j = 0; j < n; j++) {
             for (int k = 0; k < 7; k++) {
@@ -308,9 +311,14 @@ void busca_parametrizada1(FILE *arq_entrada, string_t *nome_campos, string_t *va
 
         if (encontrado == n) {
             imprimir_registro(reg);
+            n_registros_encontrados++;
         }
 
         destruir_registro(reg, 1);
+    }
+
+    if (n_registros_encontrados == 0) {
+        printf("Registro inexistente\n");
     }
 }
 
@@ -341,6 +349,7 @@ void busca_parametrizada2(FILE *arq_entrada, string_t *nome_campos, string_t *va
     long long int byteOffset_atual = TAM_CAB_2;
 
     string_t campos_validos[] = {"id", "ano", "qtt", "sigla", "cidade", "marca", "modelo"};
+    int n_registros_encontrados = 0;
     while (byteOffset_atual < proxByteOffset) {
         registro_t *reg = criar_registro();
 
@@ -393,13 +402,16 @@ void busca_parametrizada2(FILE *arq_entrada, string_t *nome_campos, string_t *va
         }
         if (encontrado == n) {
             imprimir_registro(reg);
+            n_registros_encontrados++;
         }
 
         destruir_registro(reg, 1);
     }
+
+    if (n_registros_encontrados == 0) {
+        printf("Registro inexistente\n");
+    }
 }
-
-
 
 void funcionalidade4(int tipo_de_arquivo, string_t binario_entrada, int RRN) {
     if (tipo_de_arquivo != 1) {
