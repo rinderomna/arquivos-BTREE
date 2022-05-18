@@ -113,11 +113,11 @@ long long int get_topo(cabecalho_t *cabecalho) {
     return cabecalho->topo;
 }
 
-void set_proxRRN_cabecalho(cabecalho_t *cabecalho, int proxRRN) {
+void set_proxRRN(cabecalho_t *cabecalho, int proxRRN) {
     cabecalho->proxRRN = proxRRN;
 }
 
-int get_proxRRN_cabecalho(cabecalho_t *cabecalho) {
+int get_proxRRN(cabecalho_t *cabecalho) {
     return cabecalho->proxRRN;
 }
 
@@ -129,10 +129,10 @@ int get_nroRegRem(cabecalho_t *cabecalho) {
     return cabecalho->nroRegRem;
 }
 
-void set_proxByteOffset_cabecalho(cabecalho_t *cabecalho, long long int proxByteOffset) {
+void set_proxByteOffset(cabecalho_t *cabecalho, long long int proxByteOffset) {
     cabecalho->proxByteOffset = proxByteOffset;
 }
 
-long long int get_proxByteOffset_cabecalho(cabecalho_t *cabecalho) {
+long long int get_proxByteOffset(cabecalho_t *cabecalho) {
     return cabecalho->proxByteOffset;
 }

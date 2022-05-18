@@ -27,10 +27,10 @@ void imprimir_registro(registro_t *reg);
 // Getters e Setters:
 void set_removido(registro_t *reg, char removido);
 char get_removido(registro_t *reg);
-void set_proxRRN(registro_t *reg, int proxRRN);
-int get_proxRRN(registro_t *reg);
-void set_proxByteOffset(registro_t *reg, long long int proxByteOffset);
-long long int get_proxByteOffset(registro_t *reg);
+void set_proxRRN_removido(registro_t *reg, int proxRRN);
+int get_proxRRN_removido(registro_t *reg);
+void set_proxByteOffset_removido(registro_t *reg, long long int proxByteOffset);
+long long int get_proxByteOffset_removido(registro_t *reg);
 void set_id(registro_t *reg, int id);
 int get_id(registro_t *reg);
 void set_ano(registro_t *reg, int ano);

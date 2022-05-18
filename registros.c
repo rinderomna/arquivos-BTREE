@@ -376,19 +376,19 @@ char get_removido(registro_t *reg) {
     return reg->removido;
 }
 
-void set_proxRRN_registro(registro_t *reg, int proxRRN) {
+void set_proxRRN_removido(registro_t *reg, int proxRRN) {
     reg->proxRRN = proxRRN;
 }
 
-int get_proxRRN_registro(registro_t *reg) {
+int get_proxRRN_removido(registro_t *reg) {
     return reg->proxRRN;
 }
 
-void set_proxByteOffset_registro(registro_t *reg, long long int proxByteOffset) {
+void set_proxByteOffset_removido(registro_t *reg, long long int proxByteOffset) {
     reg->proxByteOffset = proxByteOffset;
 }
 
-long long int get_proxByteOffset_registro(registro_t *reg) {
+long long int get_proxByteOffset_removido(registro_t *reg) {
     return reg->proxByteOffset;
 }
 
