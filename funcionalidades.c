@@ -203,7 +203,6 @@ void funcionalidade2(int tipo_do_arquivo, string_t binario_entrada) {
 }
 
 
-// PARAMOS AQUI
 void funcionalidade3(int tipo_de_arquivo, string_t binario_entrada, int n) {
     FILE *arq_entrada = fopen(binario_entrada, "rb");
     if (!arq_entrada) {
