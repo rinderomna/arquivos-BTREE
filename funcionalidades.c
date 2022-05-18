@@ -52,14 +52,10 @@ void funcionalidade1(int tipo_do_arquivo, string_t csv, string_t binario_saida) 
 
     // Escrever cabeçalho inicializado com valores padrão:
     cabecalho_t *cabecalho = criar_cabecalho();
-    if (tipo_do_arquivo == 1) {
-        escrever_cabecalho1_em_arquivo(cabecalho, arq_saida);    
-    } else if (tipo_do_arquivo == 2) {
-        escrever_cabecalho2_em_arquivo(cabecalho, arq_saida);    
-
-        // Setando próximo byteoffset como depois do cabeçalho:
-        set_proxByteOffset_cabecalho(cabecalho, TAM_CAB_2);
-    }
+    escrever_cabecalho_em_arquivo(cabecalho, tipo_do_arquivo, arq_saida);  
+    
+    // Setando próximo byteoffset como depois do cabeçalho caso seja tipo 2:
+    set_proxByteOffset_cabecalho(cabecalho, TAM_CAB_2);
     
     int has_EOF = 0;
     // Ler e destruir primeira linha de header do csv:
@@ -101,12 +97,12 @@ void funcionalidade1(int tipo_do_arquivo, string_t csv, string_t binario_saida) 
         long long int novoProxByteOffset = 0;
         if (tipo_do_arquivo == 1) {
             escrever_registro1_em_arquivo(reg, arq_saida);
-            novoProxRRN = get_proxRRN(cabecalho) + 1;
-            set_proxRRN(cabecalho, novoProxRRN);
+            novoProxRRN = get_proxRRN_cabecalho(cabecalho) + 1;
+            set_proxRRN_cabecalho(cabecalho, novoProxRRN);
         } else if (tipo_do_arquivo == 2) {
             tam_reg2 = escrever_registro2_em_arquivo(reg, arq_saida);
-            novoProxByteOffset = get_proxByteOffset2(cabecalho) + tam_reg2;
-            set_proxByteOffset2(cabecalho, novoProxByteOffset);
+            novoProxByteOffset = get_proxByteOffset_cabecalho(cabecalho) + tam_reg2;
+            set_proxByteOffset_cabecalho(cabecalho, novoProxByteOffset);
         }
 
         // Liberar memória:
@@ -322,7 +318,7 @@ void busca_parametrizada1(FILE *arq_entrada, string_t *nome_campos, string_t *va
 void busca_parametrizada2(FILE *arq_entrada, string_t *nome_campos, string_t *valor_campos, int n) {
     cabecalho_t *cabecalho = criar_cabecalho();
 
-    ler_cabecalho2_de_arquivo(cabecalho, arq_entrada);
+    ler_cabecalho_de_arquivo(cabecalho, 2, arq_entrada);
 
     long long int proxByteOffset = get_proxByteOffset_cabecalho(cabecalho);
     
@@ -405,7 +401,13 @@ void busca_parametrizada2(FILE *arq_entrada, string_t *nome_campos, string_t *va
 
 
 
-void funcionalidade4(string_t tipo_de_arquivo, string_t binario_entrada, int RRN) {
+void funcionalidade4(int tipo_de_arquivo, string_t binario_entrada, int RRN) {
+    if (tipo_de_arquivo != 1) {
+        printf("Falha no processamento do arquivo.\n");
+
+        return;
+    }
+
     FILE *arq_entrada = NULL;
 
     arq_entrada = fopen(binario_entrada, "rb");
@@ -420,7 +422,7 @@ void funcionalidade4(string_t tipo_de_arquivo, string_t binario_entrada, int RRN
 
     ler_cabecalho_de_arquivo(cabecalho, 1, arq_entrada);
 
-    int proxRRN = get_proxRRN_cabacalho(cabecalho);
+    int proxRRN = get_proxRRN_cabecalho(cabecalho);
     char status = get_status(cabecalho);
 
     destruir_cabecalho(cabecalho);

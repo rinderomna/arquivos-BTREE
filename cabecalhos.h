@@ -13,16 +13,16 @@ void escrever_cabecalho_em_arquivo(cabecalho_t *cabecalho, int tipo_do_arquivo, 
 void ler_cabecalho_de_arquivo(cabecalho_t *cabecalho, int tipo_do_arquivo, FILE *fp);
 
 // Desaloca memória relacionada ao cabeçalho
-void destruir_cabecalho1(cabecalho_t *cabecalho);
+void destruir_cabecalho(cabecalho_t *cabecalho);
 
 // Getters e Setters:
 void set_status(cabecalho_t *cabecalho, char status);
 char get_status(cabecalho_t *cabecalho);
 void set_topo(cabecalho_t *cabecalho, long long int topo);
 long long int get_topo(cabecalho_t *cabecalho);
-void set_proxRRN(cabecalho_t *cabecalho, int proxRRN);
-int get_proxRRN(cabecalho_t *cabecalho);
+void set_proxRRN_cabecalho(cabecalho_t *cabecalho, int proxRRN);
+int get_proxRRN_cabecalho(cabecalho_t *cabecalho);
 void set_nroRegRem(cabecalho_t *cabecalho, int nroRegRem);
-int get_nroRegRem(cabecalho_t *cabecalho)
-void set_proxByteOffset(cabecalho_t *cabecalho, long long int proxByteOffset)
-long long int get_proxByteOffset(cabecalho_t *cabecalho)
+int get_nroRegRem(cabecalho_t *cabecalho);
+void set_proxByteOffset_cabecalho(cabecalho_t *cabecalho, long long int proxByteOffset);
+long long int get_proxByteOffset_cabecalho(cabecalho_t *cabecalho);
