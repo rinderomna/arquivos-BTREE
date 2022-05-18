@@ -141,7 +141,7 @@ void funcionalidade2(int tipo_do_arquivo, string_t binario_entrada) {
     ler_cabecalho_de_arquivo(cabecalho, tipo_do_arquivo, arq_entrada);
     char status = get_status(cabecalho);
     int proxRRN = get_proxRRN_cabecalho(cabecalho);
-    long long int proxByteOffset = get_proxByteOffset2(c2);
+    long long int proxByteOffset = get_proxByteOffset_cabecalho(cabecalho);
 
     destruir_cabecalho(cabecalho);
     
@@ -186,7 +186,7 @@ void funcionalidade2(int tipo_do_arquivo, string_t binario_entrada) {
         while (byteOffset_atual < proxByteOffset) {
             registro_t *reg = criar_registro();
 
-            int tam_reg = ler_registro(reg, arq_entrada);
+            int tam_reg = ler_registro(reg, tipo_do_arquivo, arq_entrada);
             byteOffset_atual += tam_reg;
 
             char removido = get_removido(reg);
@@ -195,7 +195,7 @@ void funcionalidade2(int tipo_do_arquivo, string_t binario_entrada) {
                 imprimir_registro(reg);
             }
 
-            destruir_registro2(reg, 1);
+            destruir_registro(reg, 1);
         }
     }
 
@@ -417,14 +417,14 @@ void funcionalidade4(string_t tipo_de_arquivo, string_t binario_entrada, int RRN
         return;
     }
 
-    cabecalho1_t *c1 = criar_cabecalho1();
+    cabecalho_t *cabecalho = criar_cabecalho();
 
-    ler_cabecalho1_de_arquivo(c1, arq_entrada);
+    ler_cabecalho_de_arquivo(cabecalho, 1, arq_entrada);
 
-    int proxRRN = get_proxRRN1(c1);
-    char status = get_status1(c1);
+    int proxRRN = get_proxRRN_cabacalho(cabecalho);
+    char status = get_status(cabecalho);
 
-    destruir_cabecalho1(c1);
+    destruir_cabecalho(cabecalho);
 
     if (status == '0') {
         printf("Falha no processamento do arquivo.\n");
@@ -446,16 +446,16 @@ void funcionalidade4(string_t tipo_de_arquivo, string_t binario_entrada, int RRN
 
     fseek(arq_entrada, byte_offset, SEEK_SET);
 
-    registro1_t *reg1 = criar_registro1();
+    registro_t *reg = criar_registro();
 
-    ler_registro1(reg1, arq_entrada);
+    ler_registro(reg, 1,arq_entrada);
 
-    char removido = get_removido1(reg1);
+    char removido = get_removido(reg);
 
     if (removido == '0') {
-        imprimir_reg1(reg1);
+        imprimir_registro(reg);
     }
 
-    destruir_registro1(reg1, 1);
+    destruir_registro(reg, 1);
     fclose(arq_entrada);
 }
