@@ -1,6 +1,6 @@
-/* |Trabalho 1 de Arquivos - 2022/02|
- * Hélio Nogueira Cardoso - N⁰USP: 10310227
- * Raphael David Philippe Leveque - NºUSP: 12542522
+/* |Trabalho 1 de Arquivos - 2022/01|
+ * Hélio Nogueira Cardoso         - N°USP: 10310227
+ * Raphael David Philippe Leveque - N°USP: 12542522
  */
 
 #include <stdio.h>
