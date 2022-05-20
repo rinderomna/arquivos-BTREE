@@ -1,3 +1,8 @@
+/* |Trabalho 1 de Arquivos - 2022/02|
+ * Hélio Nogueira Cardoso - N⁰USP: 10310227
+ * Raphael David Philippe Leveque - NºUSP: 12542522
+ */
+
 #include <stdio.h>
 #include <stdlib.h>
 #include "funcionalidades.h"

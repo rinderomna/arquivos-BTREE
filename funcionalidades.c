@@ -133,7 +133,9 @@ void funcionalidade2(int tipo_do_arquivo, string_t binario_entrada) {
         return;
     }
 
+    // Ler do cabecalho status, proxRRN e proxByteOffset
     cabecalho_t *cabecalho = criar_cabecalho();
+
     ler_cabecalho_de_arquivo(cabecalho, tipo_do_arquivo, arq_entrada);
     char status = get_status(cabecalho);
     int proxRRN = get_proxRRN(cabecalho);
@@ -141,6 +143,7 @@ void funcionalidade2(int tipo_do_arquivo, string_t binario_entrada) {
 
     destruir_cabecalho(cabecalho);
     
+    // Testar consistência do arquivo
     if (status == '0') {
         printf("Falha no processamento do arquivo.\n");
         fclose(arq_entrada);
@@ -148,7 +151,9 @@ void funcionalidade2(int tipo_do_arquivo, string_t binario_entrada) {
         return;
     }
 
+    // Para cada tipo de arquivo
     if (tipo_do_arquivo == 1) {
+        // Testar se há pelo menos 1 registro
         if (proxRRN == 0) {
             printf("Registro inexistente\n");
             fclose(arq_entrada);
@@ -156,6 +161,7 @@ void funcionalidade2(int tipo_do_arquivo, string_t binario_entrada) {
             return;
         }
 
+        // Leitura sequencial dos registros imprimindo os não removidos
         for (int i = 0; i < proxRRN; i++) {
             registro_t *reg = criar_registro();
 
@@ -170,6 +176,7 @@ void funcionalidade2(int tipo_do_arquivo, string_t binario_entrada) {
             destruir_registro(reg, 1);
         }
     } else if (tipo_do_arquivo == 2) {
+        // Testar se há pelo menos 1 registro
         if (proxByteOffset <= TAM_CAB_2) {
             printf("Registro inexistente\n");
             fclose(arq_entrada);
@@ -177,8 +184,8 @@ void funcionalidade2(int tipo_do_arquivo, string_t binario_entrada) {
             return;
         }
 
+        // Leitura sequencial dos registros imprimindo os não removidos
         long long int byteOffset_atual = TAM_CAB_2;
-
         while (byteOffset_atual < proxByteOffset) {
             registro_t *reg = criar_registro();
 
@@ -198,6 +205,209 @@ void funcionalidade2(int tipo_do_arquivo, string_t binario_entrada) {
     fclose(arq_entrada);
 }
 
+void busca_parametrizada1(FILE *arq_entrada, string_t *nome_campos, string_t *valor_campos, int n) {
+    // Ler do cabeçalho status e proxByteOffset
+    cabecalho_t *cabecalho = criar_cabecalho();
+
+    ler_cabecalho_de_arquivo(cabecalho, 1, arq_entrada);
+
+    int proxRRN = get_proxRRN(cabecalho);
+    char status = get_status(cabecalho);
+
+    destruir_cabecalho(cabecalho);
+    
+    // Testar consistência do arquivo
+    if (status == '0') {
+        printf("Falha no processamento do arquivo.\n");
+
+        return;
+    }
+
+    // Testar se há pelo menos algum registro
+    if (proxRRN == 0) {
+        printf("Registro inexistente\n");
+
+        return;
+    }
+
+    int n_registros_encontrados = 0; // contador de registros que atendem especificações
+    string_t campos_validos[] = {"id", "ano", "qtt", "sigla", "cidade", "marca", "modelo"};
+
+    // Leitura sequencial do arquivo testando condições de busca
+    for (int i = 0; i < proxRRN; i++) {
+        registro_t *reg = criar_registro();
+
+        ler_registro(reg, 1, arq_entrada);
+        
+        char removido = get_removido(reg);
+
+        // Testando se registro está logicamente removido
+        if (removido == '1') {
+            destruir_registro(reg, 1);
+
+            continue;
+        }
+
+        // 'encontrado' irá contar quantas das n condições foram atendidas pelo registro atual.
+        short encontrado = 0;
+        for (int condicao = 0; condicao < n; condicao++) {
+            // Testar cada um dos campos válidos para saber se é um campo da condição atual
+            for (int k = 0; k < 7; k++) {
+                int num = 0;
+                if (compare_strings_case_sensitive(nome_campos[condicao], campos_validos[k]) == 0) {
+                    // id, ano e qtt (k = 0, 1 ou 2) têm de ser convertidos para inteiro
+                    if (k < 3) {
+                        num = atoi(valor_campos[condicao]);
+                    }
+
+                    // Se o valor do campo no registro confere com a condição, incrementar 'encontrado'
+                    switch (k) {
+                        case 0:
+                            encontrado += (get_id(reg) == num);
+                            break;
+                        case 1:
+                            encontrado += (get_ano(reg) == num);
+                            break;
+                        case 2:
+                            encontrado += (get_qtt(reg) == num);
+                            break;
+                        case 3:
+                            encontrado += (compare_strings_case_sensitive(get_sigla(reg), valor_campos[condicao]) == 0);
+                            break;
+                        case 4:
+                            encontrado += (compare_strings_case_sensitive(get_cidade(reg), valor_campos[condicao]) == 0);
+                            break;
+                        case 5:
+                            encontrado += (compare_strings_case_sensitive(get_marca(reg), valor_campos[condicao]) == 0);
+                            break;
+                        case 6:
+                            print_string(get_modelo(reg));
+                            encontrado += (compare_strings_case_sensitive(get_modelo(reg), valor_campos[condicao]) == 0);
+                            break;
+                    }
+                    break;
+                }
+            }
+        }
+
+        // Se as n condições foram atendidas, imprimir registro
+        if (encontrado == n) {
+            imprimir_registro(reg);
+            n_registros_encontrados++;
+        }
+
+        destruir_registro(reg, 1);
+    }
+
+    // Se nenhum registro atendeu às condições, informar que tal registro não existe
+    if (n_registros_encontrados == 0) {
+        printf("Registro inexistente\n");
+    }
+}
+
+void busca_parametrizada2(FILE *arq_entrada, string_t *nome_campos, string_t *valor_campos, int n) {
+    // Ler do cabeçalho status e proxByteOffset
+    cabecalho_t *cabecalho = criar_cabecalho();
+
+    ler_cabecalho_de_arquivo(cabecalho, 2, arq_entrada);
+
+    char status = get_status(cabecalho);
+    long long int proxByteOffset = get_proxByteOffset(cabecalho);
+
+    destruir_cabecalho(cabecalho);
+
+    // Testar consistência do arquivo
+    if (status == '0') {
+        printf("Falha no processamento do arquivo.\n");
+
+        return;
+    }
+
+    // Testar se há pelo menos algum registro
+    if (proxByteOffset <= TAM_CAB_2) {
+        printf("Registro inexistente\n");
+
+        return;
+    }
+
+    // Iniciar leitura após o cabeçalho
+    long long int byteOffset_atual = TAM_CAB_2;
+
+    string_t campos_validos[] = {"id", "ano", "qtt", "sigla", "cidade", "marca", "modelo"};
+    int n_registros_encontrados = 0; // contador de registros que atendem especificações
+
+    // Leitura sequencial do arquivo testando condições de busca
+    while (byteOffset_atual < proxByteOffset) {
+        // Ler próximo registro
+        registro_t *reg = criar_registro();
+
+        int tam_reg = ler_registro(reg, 2, arq_entrada);
+        byteOffset_atual += tam_reg;
+
+        char removido = get_removido(reg);
+
+        // Testando se registro está logicamente removido
+        if (removido == '1') {
+            destruir_registro(reg, 1);
+
+            continue;
+        }
+
+        // 'encontrado' irá contar quantas das n condições foram atendidas pelo registro atual.
+        short encontrado = 0;
+        for (int condicao = 0; condicao < n; condicao++) {
+            // Testar cada um dos campos válidos para saber se é um campo da condição atual
+            for (int k = 0; k < 7; k++) {
+                int num = 0;
+                if (compare_strings_case_sensitive(nome_campos[condicao], campos_validos[k]) == 0) {
+                    // id, ano e qtt (k = 0, 1 ou 2) têm de ser convertidos para inteiro
+                    if (k < 3) {
+                        num = atoi(valor_campos[condicao]);
+                    }
+
+                    // Se o valor do campo no registro confere com a condição, incrementar 'encontrado'
+                    switch (k) {
+                        case 0:
+                            encontrado += (get_id(reg) == num);
+                            break;
+                        case 1:
+                            encontrado += (get_ano(reg) == num);
+                            break;
+                        case 2:
+                            encontrado += (get_qtt(reg) == num);
+                            break;
+                        case 3:
+                            encontrado += (compare_strings_case_sensitive(get_sigla(reg), valor_campos[condicao]) == 0);
+                            break;
+                        case 4:
+                            encontrado += (compare_strings_case_sensitive(get_cidade(reg), valor_campos[condicao]) == 0);
+                            break;
+                        case 5:
+                            encontrado += (compare_strings_case_sensitive(get_marca(reg), valor_campos[condicao]) == 0);
+                            break;
+                        case 6:
+                            encontrado += (compare_strings_case_sensitive(get_modelo(reg), valor_campos[condicao]) == 0);
+                            break;
+                    }
+                    break;
+                }
+            }
+        }
+
+        // Se as n condições foram atendidas, imprimir registro
+        if (encontrado == n) {
+            imprimir_registro(reg);
+            n_registros_encontrados++;
+        }
+
+        destruir_registro(reg, 1);
+    }
+
+    // Se nenhum registro atendeu às condições, informar que tal registro não existe
+    if (n_registros_encontrados == 0) {
+        printf("Registro inexistente\n");
+    }
+}
 
 void funcionalidade3(int tipo_de_arquivo, string_t binario_entrada, int n) {
     FILE *arq_entrada = fopen(binario_entrada, "rb");
@@ -205,15 +415,21 @@ void funcionalidade3(int tipo_de_arquivo, string_t binario_entrada, int n) {
         printf("Falha no processamento do arquivo.\n");
         return;
     }
+
+    // * nome_campos guarda os nomes dos campos que farão parte das condições de busca
+    // * valor_campos guarda os valores das condições de busca em relação ao campo cujo
+    // nome está na respectiva posição de nome_campos 
     string_t *nome_campos = (string_t *)malloc(n * sizeof(string_t));
     string_t *valor_campos = (string_t *)malloc(n * sizeof(string_t));
 
+    // Ler nome_campos e valor_campos da entrada padrão
     for (int i = 0; i < n; i++) {
         nome_campos[i] = read_until(stdin, ' ', NULL);
         valor_campos[i] = read_until(stdin, '\n', NULL);
-        remove_quotes(valor_campos[i]);
+        remove_quotes(valor_campos[i]); // Remover aspas se houver
     }
 
+    // Realiza busca parametrizada para cada respectivo tipo de arquivo
     if (tipo_de_arquivo == 1) {
         busca_parametrizada1(arq_entrada, nome_campos, valor_campos, n);
     } else if (tipo_de_arquivo == 2){
@@ -228,192 +444,8 @@ void funcionalidade3(int tipo_de_arquivo, string_t binario_entrada, int n) {
     destroy_string_array(valor_campos, n);
 }
 
-void busca_parametrizada1(FILE *arq_entrada, string_t *nome_campos, string_t *valor_campos, int n) {
-    cabecalho_t *cabecalho = criar_cabecalho();
-
-    ler_cabecalho_de_arquivo(cabecalho, 1, arq_entrada);
-
-    int proxRRN = get_proxRRN(cabecalho);
-    char status = get_status(cabecalho);
-
-    destruir_cabecalho(cabecalho);
-    
-    if (status == '0') {
-        printf("Falha no processamento do arquivo.\n");
-
-        return;
-    }
-
-    if (proxRRN == 0) {
-        printf("Registro inexistente\n");
-
-        return;
-    }
-
-    int n_registros_encontrados = 0;
-    string_t campos_validos[] = {"id", "ano", "qtt", "sigla", "cidade", "marca", "modelo"};
-
-    for (int i = 0; i < proxRRN; i++) {
-        registro_t *reg = criar_registro();
-
-        ler_registro(reg, 1, arq_entrada);
-        
-        char removido = get_removido(reg);
-
-        if (removido == '1') {
-            destruir_registro(reg, 1);
-
-            continue;
-        }
-
-        // Primeiramente, itero sobre o número de entradas, a fim de verificar se o registro atual possui todos os valores a serem buscados
-        // Em seguida, para cada iteração, preciso descobrir qual o nome do campo, iterando sobre um vetor com todos os nomes dos campos
-        // Após descobrir qual o nome do campo, verifico se o valor do campo do atual registro condiz com o valor do campo passado na entrada
-        // Após as 'n' iterações, se todos os valores da entrada condizerem com o registro atual, então encontrado==n, e irei imprimir o registro atual
-
-        short encontrado = 0;
-        for (int j = 0; j < n; j++) {
-            for (int k = 0; k < 7; k++) {
-                int num = 0;
-                if (compare_strings_case_sensitive(nome_campos[j], campos_validos[k]) == 0) {
-                    if (k < 3) {
-                        num = atoi(valor_campos[j]);
-                    }
-
-                    switch (k) {
-                        case 0:
-                            encontrado += (get_id(reg) == num);
-                            break;
-                        case 1:
-                            encontrado += (get_ano(reg) == num);
-                            break;
-                        case 2:
-                            encontrado += (get_qtt(reg) == num);
-                            break;
-                        case 3:
-                            encontrado += (compare_strings_case_sensitive(get_sigla(reg), valor_campos[j]) == 0);
-                            break;
-                        case 4:
-                            encontrado += (compare_strings_case_sensitive(get_cidade(reg), valor_campos[j]) == 0);
-                            break;
-                        case 5:
-                            encontrado += (compare_strings_case_sensitive(get_marca(reg), valor_campos[j]) == 0);
-                            break;
-                        case 6:
-                            print_string(get_modelo(reg));
-                            encontrado += (compare_strings_case_sensitive(get_modelo(reg), valor_campos[j]) == 0);
-                            break;
-                    }
-                    break;
-                }
-            }
-        }
-
-        if (encontrado == n) {
-            imprimir_registro(reg);
-            n_registros_encontrados++;
-        }
-
-        destruir_registro(reg, 1);
-    }
-
-    if (n_registros_encontrados == 0) {
-        printf("Registro inexistente\n");
-    }
-}
-
-
-void busca_parametrizada2(FILE *arq_entrada, string_t *nome_campos, string_t *valor_campos, int n) {
-    cabecalho_t *cabecalho = criar_cabecalho();
-
-    ler_cabecalho_de_arquivo(cabecalho, 2, arq_entrada);
-
-    long long int proxByteOffset = get_proxByteOffset(cabecalho);
-    
-    char status = get_status(cabecalho);
-
-    destruir_cabecalho(cabecalho);
-
-    if (status == '0') {
-        printf("Falha no processamento do arquivo.\n");
-
-        return;
-    }
-
-    if (proxByteOffset <= TAM_CAB_2) {
-        printf("Registro inexistente\n");
-
-        return;
-    }
-
-    long long int byteOffset_atual = TAM_CAB_2;
-
-    string_t campos_validos[] = {"id", "ano", "qtt", "sigla", "cidade", "marca", "modelo"};
-    int n_registros_encontrados = 0;
-    while (byteOffset_atual < proxByteOffset) {
-        registro_t *reg = criar_registro();
-
-        int tam_reg = ler_registro(reg, 2, arq_entrada);
-        byteOffset_atual += tam_reg;
-
-        char removido = get_removido(reg);
-
-        if (removido == '1') {
-            destruir_registro(reg, 1);
-
-            continue;
-        }
-
-        short encontrado = 0;
-        for (int j = 0; j < n; j++) {
-            for (int k = 0; k < 7; k++) {
-                int num = 0;
-                if (compare_strings_case_sensitive(nome_campos[j], campos_validos[k]) == 0) {
-                    if (k < 3) {
-                        num = atoi(valor_campos[j]);
-                    }
-
-                    switch (k) {
-                        case 0:
-                            encontrado += (get_id(reg) == num);
-                            break;
-                        case 1:
-                            encontrado += (get_ano(reg) == num);
-                            break;
-                        case 2:
-                            encontrado += (get_qtt(reg) == num);
-                            break;
-                        case 3:
-                            encontrado += (compare_strings_case_sensitive(get_sigla(reg), valor_campos[j]) == 0);
-                            break;
-                        case 4:
-                            encontrado += (compare_strings_case_sensitive(get_cidade(reg), valor_campos[j]) == 0);
-                            break;
-                        case 5:
-                            encontrado += (compare_strings_case_sensitive(get_marca(reg), valor_campos[j]) == 0);
-                            break;
-                        case 6:
-                            encontrado += (compare_strings_case_sensitive(get_modelo(reg), valor_campos[j]) == 0);
-                            break;
-                    }
-                    break;
-                }
-            }
-        }
-        if (encontrado == n) {
-            imprimir_registro(reg);
-            n_registros_encontrados++;
-        }
-
-        destruir_registro(reg, 1);
-    }
-
-    if (n_registros_encontrados == 0) {
-        printf("Registro inexistente\n");
-    }
-}
-
 void funcionalidade4(int tipo_de_arquivo, string_t binario_entrada, int RRN) {
+    // Funcionalidade apenas para tipo 1 de arquivo (Registros de Tamanho Fixo)
     if (tipo_de_arquivo != 1) {
         printf("Falha no processamento do arquivo.\n");
 
@@ -430,15 +462,17 @@ void funcionalidade4(int tipo_de_arquivo, string_t binario_entrada, int RRN) {
         return;
     }
 
+    // Ler do cabeçalho status e proxRRN
     cabecalho_t *cabecalho = criar_cabecalho();
 
     ler_cabecalho_de_arquivo(cabecalho, 1, arq_entrada);
 
-    int proxRRN = get_proxRRN(cabecalho);
     char status = get_status(cabecalho);
+    int proxRRN = get_proxRRN(cabecalho);
 
     destruir_cabecalho(cabecalho);
 
+    // Testar consistência do arquivo
     if (status == '0') {
         printf("Falha no processamento do arquivo.\n");
 
@@ -447,6 +481,7 @@ void funcionalidade4(int tipo_de_arquivo, string_t binario_entrada, int RRN) {
         return;
     }
 
+    // Testar se RRN é válido
     if (RRN >= proxRRN || RRN < 0) {
         printf("Registro inexistente.\n");
 
@@ -455,18 +490,23 @@ void funcionalidade4(int tipo_de_arquivo, string_t binario_entrada, int RRN) {
         return;
     }
     
+    // Calcular Byte Offset para RRN passado
     long long int byte_offset = TAM_CAB_1 + RRN * TAM_REG1;
 
+    // Pular para Byte Offset calculado
     fseek(arq_entrada, byte_offset, SEEK_SET);
 
+    // Ler e imprimir registro se ele não estiver removido
     registro_t *reg = criar_registro();
 
     ler_registro(reg, 1,arq_entrada);
 
     char removido = get_removido(reg);
-
+    
     if (removido == '0') {
         imprimir_registro(reg);
+    } else {
+        printf("Registro inexistente.\n");
     }
 
     destruir_registro(reg, 1);

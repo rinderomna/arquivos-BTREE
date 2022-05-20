@@ -1,3 +1,5 @@
+// Personal Library to Manipulate Strings
+
 typedef unsigned long size_t;
 typedef char symbol_t;
 typedef symbol_t * string_t;
