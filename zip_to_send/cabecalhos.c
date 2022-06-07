@@ -4,6 +4,8 @@
 #include "cabecalhos.h"
 #include "str.h"
 
+
+// Cabeçalho para Arquivo com Registros de Tamanho Fixo
 struct cabecalho_ {
     char status;
     long long int topo;
