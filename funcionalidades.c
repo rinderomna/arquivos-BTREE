@@ -4,6 +4,7 @@
 #include "funcionalidades.h"
 #include "cabecalhos.h"
 #include "registros.h"
+#include "indice.h"
 #include "str.h"
 
 void binarioNaTela(string_t nomeArquivoBinario) { /* Você não precisa entender o código dessa função. */
@@ -155,7 +156,7 @@ void funcionalidade2(int tipo_do_arquivo, string_t binario_entrada) {
     if (tipo_do_arquivo == 1) {
         // Testar se há pelo menos 1 registro
         if (proxRRN == 0) {
-            printf("Registro inexistente\n");
+            printf("Registro inexistente.\n");
             fclose(arq_entrada);
 
             return;
@@ -178,7 +179,7 @@ void funcionalidade2(int tipo_do_arquivo, string_t binario_entrada) {
     } else if (tipo_do_arquivo == 2) {
         // Testar se há pelo menos 1 registro
         if (proxByteOffset <= TAM_CAB_2) {
-            printf("Registro inexistente\n");
+            printf("Registro inexistente.\n");
             fclose(arq_entrada);
 
             return;
@@ -511,4 +512,111 @@ void funcionalidade4(int tipo_de_arquivo, string_t binario_entrada, int RRN) {
 
     destruir_registro(reg, 1);
     fclose(arq_entrada);
+}
+
+void funcionalidade5(int tipo_do_arquivo, string_t arquivo_de_dados, string_t arquivo_de_indice) {
+    FILE *arq_entrada = NULL;
+
+    arq_entrada = fopen(arquivo_de_dados, "rb");
+
+    if (!arq_entrada) {
+        printf("Falha no processamento do arquivo.\n");
+
+        return;
+    }
+    
+    char status = ler_status_do_indice(arq_entrada);
+
+    if (status == '0') {
+        printf("Falha no processamento do arquivo.\n");
+
+        return;
+    }
+
+    // Criando índice
+    indice_t *indice = criar_indice();
+
+    // Ler sequencialmente o arquivo de dados salvando as informações no índice em RAM:
+    
+    // Ler do cabecalho status, proxRRN e proxByteOffset
+    cabecalho_t *cabecalho = criar_cabecalho();
+
+    ler_cabecalho_de_arquivo(cabecalho, tipo_do_arquivo, arq_entrada);
+    status = get_status(cabecalho);
+    int proxRRN = get_proxRRN(cabecalho);
+    long long int proxByteOffset = get_proxByteOffset(cabecalho);
+
+    destruir_cabecalho(cabecalho);
+    
+    // Testar consistência do arquivo
+    if (status == '0') {
+        printf("Falha no processamento do arquivo.\n");
+        fclose(arq_entrada);
+
+        return;
+    }
+
+    // Para cada tipo de arquivo
+    if (tipo_do_arquivo == 1) {
+        // Testar se há pelo menos 1 registro
+        if (proxRRN == 0) {
+            fclose(arq_entrada);
+
+            return;
+        }
+
+        // Leitura sequencial dos registros imprimindo os não removidos
+        for (int rrn = 0; rrn < proxRRN; rrn++) {
+            registro_t *reg = criar_registro();
+
+            ler_registro(reg, tipo_do_arquivo, arq_entrada);
+            
+            char removido = get_removido(reg);
+
+            if (removido == '0') {
+                registro_de_indice_t *ri = criar_registro_indice();
+                set_id_registro_indice(ri, get_id(reg));
+                set_rrn_registro_indice(ri, rrn);
+                adicionar_registro_a_indice(indice, ri);
+            }
+
+            destruir_registro(reg, 1);
+        }
+
+    } else if (tipo_do_arquivo == 2) {
+        // Testar se há pelo menos 1 registro
+        if (proxByteOffset <= TAM_CAB_2) {
+            fclose(arq_entrada);
+
+            return;
+        }
+
+        // Leitura sequencial dos registros imprimindo os não removidos
+        long long int byteOffset_atual = TAM_CAB_2;
+        while (byteOffset_atual < proxByteOffset) {
+            registro_t *reg = criar_registro();
+
+            int tam_reg = ler_registro(reg, tipo_do_arquivo, arq_entrada);
+
+            char removido = get_removido(reg);
+
+            if (removido == '0') {
+                registro_de_indice_t *ri = criar_registro_indice();
+                set_id_registro_indice(ri, get_id(reg));
+                set_byte_offset_registro_indice(ri, byteOffset_atual);
+                adicionar_registro_a_indice(indice, ri);
+            }
+
+            byteOffset_atual += tam_reg;
+            destruir_registro(reg, 1);
+        }
+    }    
+
+    escrever_indice(indice, tipo_do_arquivo, arquivo_de_indice);
+
+    destruir_indice(indice);
+
+    fclose(arq_entrada);
+
+    binarioNaTela(arquivo_de_indice);
 }

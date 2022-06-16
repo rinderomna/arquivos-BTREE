@@ -13,3 +13,5 @@ void funcionalidade3(int tipo_de_arquivo, string_t binario_entrada, int n);
 
 // Imprime o registro de RRN passado de um arquivo binário, desde que ele exista e não esteja removido
 void funcionalidade4(int tipo_de_arquivo, string_t binario_entrada, int RRN);
+
+void funcionalidade5(int tipo_do_arquivo, string_t arquivo_de_dados, string_t arquivo_de_indice);

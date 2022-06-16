@@ -1,0 +1,245 @@
+#include <stdio.h>
+#include <stdlib.h>
+
+#include "utils.h"
+#include "indice.h"
+
+// struct para registro de indice para ambos os tipos de arquivo
+struct registro_de_indice_ {
+    int id;
+    int RRN;
+    long long int byte_offset;
+};
+
+// struct para indice em RAM
+struct indice_ {
+    char status;
+    registro_de_indice_t **registros;
+    int n_registros;
+};
+
+// Aloca e retorna registro de índice inicializado com valores padrão
+registro_de_indice_t *criar_registro_indice() {
+    registro_de_indice_t *ri = (registro_de_indice_t *)malloc(1 * sizeof(registro_de_indice_t));
+
+    ri->id = -1;
+    ri->byte_offset = -1;
+    ri-> RRN = -1;
+
+    return ri;
+}
+
+// Aloca e retorna índice em RAM inicializado com valores padrão
+indice_t *criar_indice() {
+    indice_t *indice = (indice_t *)malloc(1 * sizeof(indice_t));
+
+    indice->status = '0'; // Inicialmente potencialmente inconsistente
+    indice->registros = NULL;
+    indice->n_registros = 0; // Inicialmente sem registros
+
+    return indice;
+}
+
+// Desaloca memória relacionada a um índice em RAM
+void destruir_indice(indice_t *indice) {
+    if (!indice) return;
+
+    for (int i = 0; i < indice->n_registros; i++) {
+        destruir_registro_de_indice(indice->registros[i]);
+    }
+
+    free(indice->registros);
+    free(indice);
+}
+
+// Adiciona um registro de índice a um índice já criado de forma ordenada
+void adicionar_registro_a_indice(indice_t *indice, registro_de_indice_t *ri) {
+    if (!indice) return;
+
+    // Incrementa o número de regitros de índice
+    indice->n_registros++;
+
+    // Realoca espaço para mais um registro de índice
+    indice->registros = (registro_de_indice_t **)realloc(indice->registros, indice->n_registros * sizeof(registro_de_indice_t *));
+
+    indice->registros[indice->n_registros - 1] = ri;
+
+    // Ordenar registros em ordem crescente
+    heapsort(indice);
+}
+
+// Desaloca memória relacionada ao registro de índice
+void destruir_registro_de_indice(registro_de_indice_t *ri) {
+    if (ri) free(ri);
+}
+
+// Escreve registro de tipo indicado no arquivo de índice já aberto com permissão para escrita
+void escrever_registro_no_indice(registro_de_indice_t *ri, int tipo_do_arquivo, FILE *arquivo_de_indice) {
+    // Escreve o id no primeiro campo
+    fwrite(&ri->id, sizeof(int), 1, arquivo_de_indice);
+    
+    // Escreve RRN ou Byte Offset no segundo campo
+    if (tipo_do_arquivo == 1) {
+        fwrite(&ri->RRN, sizeof(int), 1, arquivo_de_indice);
+    } else if (tipo_do_arquivo == 2) {
+        fwrite(&ri->byte_offset, sizeof(long long int), 1, arquivo_de_indice);
+    }
+}
+
+// Lê registro de tipo indicado do arquivo de índice já aberto com permissão para leitura
+// Retorna se algo foi lido ou não
+int ler_registro_do_indice(registro_de_indice_t *ri, int tipo_do_arquivo, FILE *arquivo_de_indice) {
+    // Lê o id do primeiro campo
+    int lido = fread(&ri->id, sizeof(int), 1, arquivo_de_indice);
+    
+    if (!lido) return lido; // Nada foi lido
+
+    // Lê RRN ou Byte Offset no segundo campo
+    if (tipo_do_arquivo == 1) {
+        fread(&ri->RRN, sizeof(int), 1, arquivo_de_indice);
+    } else if (tipo_do_arquivo == 2) {
+        fread(&ri->byte_offset, sizeof(long long int), 1, arquivo_de_indice);
+    }
+
+    return 1; // Foi lido algo
+}
+
+// Lê status do cabeçalho de um arquivo de índice já aberto com permissão para leitura
+char ler_status_do_indice(FILE *arquivo_de_indice) {
+    char status = '0';
+
+    // Posiciona no início do arquivo
+    fseek(arquivo_de_indice, 0, SEEK_SET);
+
+    // Lê o status do índice
+    fread(&status, sizeof(char), 1, arquivo_de_indice);
+
+    return status;    
+}
+
+// Escreve status no cabeçalho de um arquivo de índice já aberto com permissão para escrita
+void escrever_status_no_indice(char status, FILE *arquivo_de_indice) {
+    // Posiciona no início do arquivo
+    fseek(arquivo_de_indice, 0, SEEK_SET);
+
+    // Escreve status passado no arquivo de índice
+    fwrite(&status, sizeof(char), 1, arquivo_de_indice);    
+}
+
+// Carrega índice para a RAM
+indice_t *ler_indice(int tipo_do_arquivo, string_t nome_do_arquivo_de_indice) {
+    FILE *arq_indice = NULL;
+    arq_indice = fopen(nome_do_arquivo_de_indice, "rb");
+
+    if (!arq_indice) {
+        printf("Falha no processamento do arquivo.\n");
+
+        return NULL;
+    }
+
+    char status = ler_status_do_indice(arq_indice);
+
+    if (status == '0') {
+        printf("Falha no processamento do arquivo.\n");
+
+        return NULL;
+    }
+
+    indice_t *indice = criar_indice();
+    indice->status = status;
+
+    int lido = 1;
+
+    do {
+        registro_de_indice_t *ri = criar_registro_indice();
+        
+        int lido = ler_registro_do_indice(ri, tipo_do_arquivo, arq_indice);
+        if (lido) {
+            adicionar_registro_a_indice(indice, ri);
+        } else {
+            destruir_registro_de_indice(ri);
+        }
+    } while (lido);
+
+    return indice;
+}
+
+// Escreve índice em RAM em arquivo de índice
+void escrever_indice(indice_t *indice, int tipo_de_arquivo, string_t nome_do_arquivo_de_indice) {
+    FILE *arq_indice = fopen(nome_do_arquivo_de_indice, "wb");
+
+    // Inicialmente potencialmente inconsistente
+    escrever_status_no_indice('0', arq_indice);
+
+    // Escreve todos os registro no arquivo de índice em RAM
+    for (int i = 0; i < indice->n_registros; i++) {
+        escrever_registro_no_indice(indice->registros[i], tipo_de_arquivo, arq_indice);
+    }
+
+    // Finaliza consistente
+    set_status_indice(indice, '1');
+    escrever_status_no_indice('1', arq_indice);
+
+    // Fechar arquivo
+    fclose(arq_indice);
+}
+
+// Getters & Setters:
+
+void set_status_indice(indice_t *indice, char status) {
+    indice->status = status;
+}
+
+char get_status_indice(indice_t *indice) {
+    return indice->status;
+}
+
+int get_n_registros(indice_t *indice) {
+    return indice->n_registros;
+}
+
+registro_de_indice_t **get_registros(indice_t *indice) {
+    return indice->registros;
+}
+
+void set_id_registro_indice(registro_de_indice_t *ri, int id) {
+    ri->id = id;
+}
+
+int get_id_registro_indice(registro_de_indice_t *ri) {
+    return ri->id;
+}
+
+void set_rrn_registro_indice(registro_de_indice_t *ri, int rrn) {
+    ri->RRN = rrn;
+}
+
+int get_rrn_registro_indice(registro_de_indice_t *ri) {
+    return ri->RRN;
+}
+
+void set_byte_offset_registro_indice(registro_de_indice_t *ri, long long int byte_offset) {
+    ri->byte_offset = byte_offset;
+}
+
+long long int get_byte_offset_registro_indice(registro_de_indice_t *ri) {
+    return ri->byte_offset;
+}
+
+void imprime_registro_indice(registro_de_indice_t *ri, int tipo_do_arquivo) {
+    printf("%d - ", ri->id);
+    
+    if (tipo_do_arquivo == 1) {
+        printf("%d\n", ri->RRN);
+    } else if (tipo_do_arquivo == 2) {
+        printf("%lld\n", ri->byte_offset);
+    }
+}
+
+void imprime_indice(indice_t *indice, int tipo_do_arquivo) {
+    printf("status: %c\n\n", indice->status);
+
+    for (int i = 0; i < indice->n_registros; i++) {
+        imprime_registro_indice(indice->registros[i], tipo_do_arquivo);
+    }
+}
