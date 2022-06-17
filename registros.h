@@ -24,6 +24,8 @@ int ler_registro(registro_t *reg, int tipo_do_registro, FILE *fp);
 // Imprime informações de um registro em formato padrão
 void imprimir_registro(registro_t *reg);
 
+registro_t *get_registro_em_posicao(int tipo_do_arquivo, long long int posicao, FILE *fp);
+
 // Getters e Setters:
 void set_removido(registro_t *reg, char removido);
 char get_removido(registro_t *reg);

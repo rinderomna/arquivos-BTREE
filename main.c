@@ -26,6 +26,8 @@ int main() {
     string_t csv;
     string_t binario_saida;
     string_t binario_entrada;
+    string_t arquivo_de_indice;
+    indice_t *indice;
     int RRN;
     int n;
 
@@ -43,15 +45,19 @@ int main() {
             binario_entrada = campos_de_comando[2];
             long long int id_buscado = atoi(campos_de_comando[3]);
 
-            long long int retorno = busca_no_indice(binario_entrada, tipo, id_buscado);
+            indice = ler_indice(tipo, binario_entrada);
+
+            long long int retorno = busca_no_indice(indice, tipo, id_buscado, NULL);
 
             printf("%lld\n", retorno);
+
+            destruir_indice(indice);
 
             break;
         case -2: // -2 tipo2 indiceTeste.bin
             binario_entrada = campos_de_comando[2];
 
-            indice_t *indice = ler_indice(tipo, binario_entrada);
+            indice = ler_indice(tipo, binario_entrada);
 
             imprime_indice(indice, tipo);
 
@@ -86,6 +92,14 @@ int main() {
             binario_saida = campos_de_comando[3];
 
             funcionalidade5(tipo, binario_entrada, binario_saida);
+            break;
+        case 6:
+            binario_entrada = campos_de_comando[2];
+            arquivo_de_indice = campos_de_comando[3];
+            n = atoi(campos_de_comando[4]);
+
+            funcionalidade6(tipo, binario_entrada, arquivo_de_indice, n);
+            break;
         default:
             break;
     }

@@ -48,10 +48,10 @@ registro_t *criar_registro() {
 void destruir_registro(registro_t *reg, int liberar_strings) {
     if (reg) {
         if (liberar_strings) {
-            destroy_string(reg->sigla);
-            destroy_string(reg->cidade);
-            destroy_string(reg->marca);
-            destroy_string(reg->modelo);
+            if (reg->sigla) destroy_string(reg->sigla);
+            if (reg->cidade) destroy_string(reg->cidade);
+            if (reg->marca) destroy_string(reg->marca);
+            if (reg->modelo) destroy_string(reg->modelo);
         }
 
         free(reg);
@@ -92,7 +92,8 @@ void escrever_registro1_em_arquivo(registro_t *reg1, FILE *fp) {
         tamanho_registro_atual += 2;
 
         // Adicionar campo de tamanho variável e opcional Cidade, caso haja:
-        int tamCidade = string_length(reg1->cidade);
+        int tamCidade = 0;
+        if (reg1->cidade) tamCidade = string_length(reg1->cidade);
         if (tamCidade > 0) {
             // primeiro, escrever tamanho do nome da cidade
             fwrite(&tamCidade, sizeof(int), 1, fp);
@@ -109,7 +110,8 @@ void escrever_registro1_em_arquivo(registro_t *reg1, FILE *fp) {
         }
 
         // Adicionar campo de tamanho variável e opcional Marca, caso haja:
-        int tamMarca = string_length(reg1->marca);
+        int tamMarca = 0;
+        if (reg1->marca) tamMarca = string_length(reg1->marca);
         if (tamMarca > 0) {
             // primeiro, escrever o tamanho do nome da marca
             fwrite(&tamMarca, sizeof(int), 1, fp);
@@ -126,7 +128,8 @@ void escrever_registro1_em_arquivo(registro_t *reg1, FILE *fp) {
         }
 
         // Adicionar campo de tamanho variável e opcional Modelo, caso haja:
-        int tamModelo = string_length(reg1->modelo);
+        int tamModelo = 0;
+        if (reg1->modelo) tamModelo = string_length(reg1->modelo);
         if (tamModelo > 0) {
             // primeiro, escrever o tamanho do nome do modelo
             fwrite(&tamModelo, sizeof(int), 1, fp);
@@ -158,21 +161,24 @@ int escrever_registro2_em_arquivo(registro_t *reg2, FILE *fp) {
         tamanho_registro_atual += 4; // qtt - int - 4 bytes
         tamanho_registro_atual += 2; // sigla - char[2] - 2 bytes
 
-        int tamCidade = string_length(reg2->cidade);
+        int tamCidade = 0;
+        if (reg2->cidade) tamCidade = string_length(reg2->cidade);
         if (tamCidade > 0) {
             tamanho_registro_atual += 4; // tamCidade - int - 4 bytes
             tamanho_registro_atual += 1; // codC5 - char - 1 byte
             tamanho_registro_atual += tamCidade; // cidade - string - n bytes
         }
 
-        int tamMarca = string_length(reg2->marca);
+        int tamMarca = 0;
+        if (reg2->marca) tamMarca = string_length(reg2->marca);
         if (tamMarca > 0) {
             tamanho_registro_atual += 4; // tamMarca - int - 4 bytes
             tamanho_registro_atual += 1; // codC6 - char - 1 byte
             tamanho_registro_atual += tamMarca; // marca - string - n bytes
         }
 
-        int tamModelo = string_length(reg2->modelo);
+        int tamModelo = 0;
+        if (reg2->modelo) tamModelo = string_length(reg2->modelo);
         if (tamModelo > 0) {
             tamanho_registro_atual += 4; // tamModelo - int - 4 bytes
             tamanho_registro_atual += 1; // codC7 - char - 1 byte
@@ -249,6 +255,26 @@ int escrever_registro2_em_arquivo(registro_t *reg2, FILE *fp) {
         return tamanho_registro_atual + 5; 
 }
 
+registro_t *get_registro_em_posicao(int tipo_do_arquivo, long long int posicao, FILE *fp) {
+    if (tipo_do_arquivo != 1 && tipo_do_arquivo != 2) return NULL;
+
+    long long int byte_offset = 0;
+
+    if (tipo_do_arquivo == 1) {
+        int RRN = (int)posicao;
+        byte_offset = TAM_CAB_1 + RRN * TAM_REG1;
+    } else {
+        byte_offset = posicao;
+    }
+
+    fseek(fp, byte_offset, SEEK_SET);
+    registro_t *reg = criar_registro();
+    
+    ler_registro(reg, tipo_do_arquivo, fp);
+
+    return reg;
+}
+
 int ler_registro(registro_t *reg, int tipo_do_registro, FILE *fp) {
     int tam_atual_reg1 = 0;
     int tam_atual_reg2 = 0;
@@ -279,6 +305,8 @@ int ler_registro(registro_t *reg, int tipo_do_registro, FILE *fp) {
     int n_lidos = 0;
     int proximo_campo_valido = 1;
 
+    char codigo_campo = ' ';
+
     // Continua lendo enquanto:
         // * Foram lidos menos de 3 campos e;
         // * Tem pelo menos mais 5 bytes cabendo no tamanho do registro
@@ -287,9 +315,9 @@ int ler_registro(registro_t *reg, int tipo_do_registro, FILE *fp) {
             ((tam_atual_reg1 + 5 < TAM_REG1 && tipo_do_registro == 1) ||
              (tam_atual_reg2 + 5 < tam_total_reg2 && tipo_do_registro == 2)) &&
             proximo_campo_valido) {
-        int tamanho_do_campo;
+        int tamanho_do_campo = 0;
         fread(&tamanho_do_campo, sizeof(int), 1, fp);
-        char codigo_campo;
+        codigo_campo = ' ';
         fread(&codigo_campo, sizeof(char), 1, fp);
         
         tam_atual_reg1 += (4 + 1);

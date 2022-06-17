@@ -68,6 +68,25 @@ void adicionar_registro_a_indice(indice_t *indice, registro_de_indice_t *ri) {
     heapsort(indice);
 }
 
+// Remove do índice em RAM por id
+void remover_do_indice_por_id(int tipo_do_arquivo, indice_t *indice, int id) {
+    int indice_de_remocao = -1;
+
+    busca_no_indice(indice, tipo_do_arquivo, id, &indice_de_remocao);
+
+    if (indice_de_remocao == -1) return;
+
+    // desalocar registro removido
+    destruir_registro_de_indice(indice->registros[indice_de_remocao]);
+
+    // "shiftada" para esquerda a partir da posição removida
+    for(int i = indice_de_remocao; i < indice->n_registros - 1; i++) {
+        indice->registros[i] = indice->registros[i + 1];
+    } 
+
+    indice->n_registros--;
+}
+
 // Desaloca memória relacionada ao registro de índice
 void destruir_registro_de_indice(registro_de_indice_t *ri) {
     if (ri) free(ri);
@@ -141,6 +160,7 @@ indice_t *ler_indice(int tipo_do_arquivo, string_t nome_do_arquivo_de_indice) {
 
     if (status == '0') {
         printf("Falha no processamento do arquivo.\n");
+        fclose(arq_indice);
 
         return NULL;
     }
@@ -161,6 +181,8 @@ indice_t *ler_indice(int tipo_do_arquivo, string_t nome_do_arquivo_de_indice) {
             destruir_registro_de_indice(ri);
         }
     } while (lido);
+
+    fclose(arq_indice);
 
     return indice;
 }
@@ -186,11 +208,7 @@ void escrever_indice(indice_t *indice, int tipo_de_arquivo, string_t nome_do_arq
 }
 
 // Retorna RRN ou Byteoffset do registro de id buscado, ou -1 caso não encontrado.
-long long int busca_no_indice(string_t nome_arquivo_de_indice, int tipo_do_arquivo, int id) {
-    indice_t *indice = ler_indice(tipo_do_arquivo, nome_arquivo_de_indice);
-
-    if (!indice) return -1;
-
+long long int busca_no_indice(indice_t *indice, int tipo_do_arquivo, int id, int *indice_encontrado) {
     // Busca binária pelo id:
     int posicao_de_retorno = -1;
 
@@ -208,15 +226,16 @@ long long int busca_no_indice(string_t nome_arquivo_de_indice, int tipo_do_arqui
     }    
 
     if (get_id_registro_indice(indice->registros[lim_esq]) == id) {
+        if (indice_encontrado) *indice_encontrado = lim_esq;
         posicao_de_retorno = (tipo_do_arquivo == 1) ? (long long int)get_rrn_registro_indice(indice->registros[lim_esq]) : get_byte_offset_registro_indice(indice->registros[lim_esq]);
     }
     else if (get_id_registro_indice(indice->registros[lim_dir]) == id) {
+        if (indice_encontrado) *indice_encontrado = lim_dir;
         posicao_de_retorno = (tipo_do_arquivo == 1) ? (long long int)get_rrn_registro_indice(indice->registros[lim_dir]) : get_byte_offset_registro_indice(indice->registros[lim_dir]);
     } else {
+        if (indice_encontrado) *indice_encontrado = -1;
         posicao_de_retorno = -1;
     }
-
-    destruir_indice(indice);
     
     return posicao_de_retorno;
 }
