@@ -244,7 +244,6 @@ int registro_encontrado(registro_t *reg, string_t *nome_campos, string_t *valor_
                         encontrado += (compare_strings_case_sensitive(get_marca(reg), valor_campos[condicao]) == 0);
                         break;
                     case 6:
-                        print_string(get_modelo(reg));
                         encontrado += (compare_strings_case_sensitive(get_modelo(reg), valor_campos[condicao]) == 0);
                         break;
                 }
@@ -328,7 +327,7 @@ void busca_parametrizada2(FILE *arq_entrada, string_t *nome_campos, string_t *va
 
     // Testar se há pelo menos algum registro
     if (proxByteOffset <= TAM_CAB_2) {
-        printf("Registro inexistente\n");
+        printf("Registro inexistente.\n");
 
         return;
     }
@@ -356,7 +355,7 @@ void busca_parametrizada2(FILE *arq_entrada, string_t *nome_campos, string_t *va
 
     // Se nenhum registro atendeu às condições, informar que tal registro não existe
     if (n_registros_encontrados == 0) {
-        printf("Registro inexistente\n");
+        printf("Registro inexistente.\n");
     }
 }
 
@@ -386,7 +385,7 @@ void funcionalidade3(int tipo_de_arquivo, string_t binario_entrada, int n) {
     } else if (tipo_de_arquivo == 2){
         busca_parametrizada2(arq_entrada, nome_campos, valor_campos, n);
     } else {
-        printf("Tipo de arquivo não existente\n");
+        printf("Tipo de arquivo não existente.\n");
     }
 
     fclose(arq_entrada);
