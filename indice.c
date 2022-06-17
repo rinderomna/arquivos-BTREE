@@ -91,8 +91,8 @@ void escrever_registro_no_indice(registro_de_indice_t *ri, int tipo_do_arquivo, 
 int ler_registro_do_indice(registro_de_indice_t *ri, int tipo_do_arquivo, FILE *arquivo_de_indice) {
     // Lê o id do primeiro campo
     int lido = fread(&ri->id, sizeof(int), 1, arquivo_de_indice);
-    
-    if (!lido) return lido; // Nada foi lido
+
+    if (!lido) return 0; // Nada foi lido
 
     // Lê RRN ou Byte Offset no segundo campo
     if (tipo_do_arquivo == 1) {
@@ -153,7 +153,8 @@ indice_t *ler_indice(int tipo_do_arquivo, string_t nome_do_arquivo_de_indice) {
     do {
         registro_de_indice_t *ri = criar_registro_indice();
         
-        int lido = ler_registro_do_indice(ri, tipo_do_arquivo, arq_indice);
+        lido = ler_registro_do_indice(ri, tipo_do_arquivo, arq_indice);
+
         if (lido) {
             adicionar_registro_a_indice(indice, ri);
         } else {
@@ -182,6 +183,42 @@ void escrever_indice(indice_t *indice, int tipo_de_arquivo, string_t nome_do_arq
 
     // Fechar arquivo
     fclose(arq_indice);
+}
+
+// Retorna RRN ou Byteoffset do registro de id buscado, ou -1 caso não encontrado.
+long long int busca_no_indice(string_t nome_arquivo_de_indice, int tipo_do_arquivo, int id) {
+    indice_t *indice = ler_indice(tipo_do_arquivo, nome_arquivo_de_indice);
+
+    if (!indice) return -1;
+
+    // Busca binária pelo id:
+    int posicao_de_retorno = -1;
+
+    int lim_esq = 0;
+    int lim_dir = indice->n_registros - 1;
+    
+    while (lim_dir - lim_esq > 1) {
+        int meio = (lim_esq + lim_dir) / 2;
+
+        if (get_id_registro_indice(indice->registros[meio]) < id) {
+            lim_esq = meio + 1;
+        } else {
+            lim_dir = meio;
+        }
+    }    
+
+    if (get_id_registro_indice(indice->registros[lim_esq]) == id) {
+        posicao_de_retorno = (tipo_do_arquivo == 1) ? (long long int)get_rrn_registro_indice(indice->registros[lim_esq]) : get_byte_offset_registro_indice(indice->registros[lim_esq]);
+    }
+    else if (get_id_registro_indice(indice->registros[lim_dir]) == id) {
+        posicao_de_retorno = (tipo_do_arquivo == 1) ? (long long int)get_rrn_registro_indice(indice->registros[lim_dir]) : get_byte_offset_registro_indice(indice->registros[lim_dir]);
+    } else {
+        posicao_de_retorno = -1;
+    }
+
+    destruir_indice(indice);
+    
+    return posicao_de_retorno;
 }
 
 // Getters & Setters:

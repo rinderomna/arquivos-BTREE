@@ -7,6 +7,7 @@
 #include <stdlib.h>
 #include "funcionalidades.h"
 #include "str.h"
+#include "indice.h"
 
 int main() {
     // Ler a linha de comando toda:
@@ -37,6 +38,27 @@ int main() {
     }
 
     switch (codigo_de_funcionalidade) {
+        //-- Campo de Teste
+        case -1: // -1 tipo2 indiceTeste.bin <algum_id_para_teste>
+            binario_entrada = campos_de_comando[2];
+            long long int id_buscado = atoi(campos_de_comando[3]);
+
+            long long int retorno = busca_no_indice(binario_entrada, tipo, id_buscado);
+
+            printf("%lld\n", retorno);
+
+            break;
+        case -2: // -2 tipo2 indiceTeste.bin
+            binario_entrada = campos_de_comando[2];
+
+            indice_t *indice = ler_indice(tipo, binario_entrada);
+
+            imprime_indice(indice, tipo);
+
+            destruir_indice(indice);
+
+            break;
+        //--
         case 1:
             csv = campos_de_comando[2];
             binario_saida = campos_de_comando[3];

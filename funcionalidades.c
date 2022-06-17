@@ -156,7 +156,7 @@ void funcionalidade2(int tipo_do_arquivo, string_t binario_entrada) {
     if (tipo_do_arquivo == 1) {
         // Testar se há pelo menos 1 registro
         if (proxRRN == 0) {
-            printf("Registro inexistente.\n");
+            printf("Registro inexistente\n");
             fclose(arq_entrada);
 
             return;
@@ -179,7 +179,7 @@ void funcionalidade2(int tipo_do_arquivo, string_t binario_entrada) {
     } else if (tipo_do_arquivo == 2) {
         // Testar se há pelo menos 1 registro
         if (proxByteOffset <= TAM_CAB_2) {
-            printf("Registro inexistente.\n");
+            printf("Registro inexistente\n");
             fclose(arq_entrada);
 
             return;
@@ -204,6 +204,60 @@ void funcionalidade2(int tipo_do_arquivo, string_t binario_entrada) {
     }
 
     fclose(arq_entrada);
+}
+
+int registro_encontrado(registro_t *reg, string_t *nome_campos, string_t *valor_campos, int n) {
+    string_t campos_validos[] = {"id", "ano", "qtt", "sigla", "cidade", "marca", "modelo"};
+
+    if (get_removido(reg) == '1') return 0;
+
+    // 'encontrado' irá contar quantas das n condições foram atendidas pelo registro atual.
+    short encontrado = 0;
+    for (int condicao = 0; condicao < n; condicao++) {
+        // Testar cada um dos campos válidos para saber se é um campo da condição atual
+        for (int k = 0; k < 7; k++) {
+            int num = 0;
+            if (compare_strings_case_sensitive(nome_campos[condicao], campos_validos[k]) == 0) {
+                // id, ano e qtt (k = 0, 1 ou 2) têm de ser convertidos para inteiro
+                if (k < 3) {
+                    num = atoi(valor_campos[condicao]);
+                }
+
+                // Se o valor do campo no registro confere com a condição, incrementar 'encontrado'
+                switch (k) {
+                    case 0:
+                        encontrado += (get_id(reg) == num);
+                        break;
+                    case 1:
+                        encontrado += (get_ano(reg) == num);
+                        break;
+                    case 2:
+                        encontrado += (get_qtt(reg) == num);
+                        break;
+                    case 3:
+                        encontrado += (compare_strings_case_sensitive(get_sigla(reg), valor_campos[condicao]) == 0);
+                        break;
+                    case 4:
+                        encontrado += (compare_strings_case_sensitive(get_cidade(reg), valor_campos[condicao]) == 0);
+                        break;
+                    case 5:
+                        encontrado += (compare_strings_case_sensitive(get_marca(reg), valor_campos[condicao]) == 0);
+                        break;
+                    case 6:
+                        print_string(get_modelo(reg));
+                        encontrado += (compare_strings_case_sensitive(get_modelo(reg), valor_campos[condicao]) == 0);
+                        break;
+                }
+                break;
+            }
+        }
+    }
+
+    if (encontrado == n) {
+        return 1;
+    }
+
+    return 0;
 }
 
 void busca_parametrizada1(FILE *arq_entrada, string_t *nome_campos, string_t *valor_campos, int n) {
@@ -232,67 +286,15 @@ void busca_parametrizada1(FILE *arq_entrada, string_t *nome_campos, string_t *va
     }
 
     int n_registros_encontrados = 0; // contador de registros que atendem especificações
-    string_t campos_validos[] = {"id", "ano", "qtt", "sigla", "cidade", "marca", "modelo"};
 
     // Leitura sequencial do arquivo testando condições de busca
     for (int i = 0; i < proxRRN; i++) {
         registro_t *reg = criar_registro();
 
         ler_registro(reg, 1, arq_entrada);
-        
-        char removido = get_removido(reg);
-
-        // Testando se registro está logicamente removido
-        if (removido == '1') {
-            destruir_registro(reg, 1);
-
-            continue;
-        }
-
-        // 'encontrado' irá contar quantas das n condições foram atendidas pelo registro atual.
-        short encontrado = 0;
-        for (int condicao = 0; condicao < n; condicao++) {
-            // Testar cada um dos campos válidos para saber se é um campo da condição atual
-            for (int k = 0; k < 7; k++) {
-                int num = 0;
-                if (compare_strings_case_sensitive(nome_campos[condicao], campos_validos[k]) == 0) {
-                    // id, ano e qtt (k = 0, 1 ou 2) têm de ser convertidos para inteiro
-                    if (k < 3) {
-                        num = atoi(valor_campos[condicao]);
-                    }
-
-                    // Se o valor do campo no registro confere com a condição, incrementar 'encontrado'
-                    switch (k) {
-                        case 0:
-                            encontrado += (get_id(reg) == num);
-                            break;
-                        case 1:
-                            encontrado += (get_ano(reg) == num);
-                            break;
-                        case 2:
-                            encontrado += (get_qtt(reg) == num);
-                            break;
-                        case 3:
-                            encontrado += (compare_strings_case_sensitive(get_sigla(reg), valor_campos[condicao]) == 0);
-                            break;
-                        case 4:
-                            encontrado += (compare_strings_case_sensitive(get_cidade(reg), valor_campos[condicao]) == 0);
-                            break;
-                        case 5:
-                            encontrado += (compare_strings_case_sensitive(get_marca(reg), valor_campos[condicao]) == 0);
-                            break;
-                        case 6:
-                            print_string(get_modelo(reg));
-                            encontrado += (compare_strings_case_sensitive(get_modelo(reg), valor_campos[condicao]) == 0);
-                            break;
-                    }
-                    break;
-                }
-            }
-        }
 
         // Se as n condições foram atendidas, imprimir registro
-        if (encontrado == n) {
+        if (registro_encontrado(reg, nome_campos, valor_campos, n)) {
             imprimir_registro(reg);
             n_registros_encontrados++;
         }
@@ -334,7 +336,6 @@ void busca_parametrizada2(FILE *arq_entrada, string_t *nome_campos, string_t *va
     // Iniciar leitura após o cabeçalho
     long long int byteOffset_atual = TAM_CAB_2;
 
-    string_t campos_validos[] = {"id", "ano", "qtt", "sigla", "cidade", "marca", "modelo"};
     int n_registros_encontrados = 0; // contador de registros que atendem especificações
 
     // Leitura sequencial do arquivo testando condições de busca
@@ -345,58 +346,7 @@ void busca_parametrizada2(FILE *arq_entrada, string_t *nome_campos, string_t *va
         int tam_reg = ler_registro(reg, 2, arq_entrada);
         byteOffset_atual += tam_reg;
 
-        char removido = get_removido(reg);
-
-        // Testando se registro está logicamente removido
-        if (removido == '1') {
-            destruir_registro(reg, 1);
-
-            continue;
-        }
-
-        // 'encontrado' irá contar quantas das n condições foram atendidas pelo registro atual.
-        short encontrado = 0;
-        for (int condicao = 0; condicao < n; condicao++) {
-            // Testar cada um dos campos válidos para saber se é um campo da condição atual
-            for (int k = 0; k < 7; k++) {
-                int num = 0;
-                if (compare_strings_case_sensitive(nome_campos[condicao], campos_validos[k]) == 0) {
-                    // id, ano e qtt (k = 0, 1 ou 2) têm de ser convertidos para inteiro
-                    if (k < 3) {
-                        num = atoi(valor_campos[condicao]);
-                    }
-
-                    // Se o valor do campo no registro confere com a condição, incrementar 'encontrado'
-                    switch (k) {
-                        case 0:
-                            encontrado += (get_id(reg) == num);
-                            break;
-                        case 1:
-                            encontrado += (get_ano(reg) == num);
-                            break;
-                        case 2:
-                            encontrado += (get_qtt(reg) == num);
-                            break;
-                        case 3:
-                            encontrado += (compare_strings_case_sensitive(get_sigla(reg), valor_campos[condicao]) == 0);
-                            break;
-                        case 4:
-                            encontrado += (compare_strings_case_sensitive(get_cidade(reg), valor_campos[condicao]) == 0);
-                            break;
-                        case 5:
-                            encontrado += (compare_strings_case_sensitive(get_marca(reg), valor_campos[condicao]) == 0);
-                            break;
-                        case 6:
-                            encontrado += (compare_strings_case_sensitive(get_modelo(reg), valor_campos[condicao]) == 0);
-                            break;
-                    }
-                    break;
-                }
-            }
-        }
-
-        // Se as n condições foram atendidas, imprimir registro
-        if (encontrado == n) {
+        if (registro_encontrado(reg, nome_campos, valor_campos, n)) {
             imprimir_registro(reg);
             n_registros_encontrados++;
         }

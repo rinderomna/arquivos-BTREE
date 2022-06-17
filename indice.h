@@ -31,6 +31,9 @@ void escrever_status_no_indice(char status, FILE *arquivo_de_indice);
 // Escreve índice em RAM em arquivo de índice
 void escrever_indice(indice_t *indice, int tipo_de_arquivo, string_t nome_do_arquivo_de_indice);
 
+// Busca de forma binária por id no indice indicado
+long long int busca_no_indice(string_t nome_arquivo_de_indice, int tipo_do_arquivo, int id);
+
 // Getters & Setters:
 
 int get_n_registros(indice_t *indice);
