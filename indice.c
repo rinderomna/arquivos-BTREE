@@ -65,7 +65,7 @@ void adicionar_registro_a_indice(indice_t *indice, registro_de_indice_t *ri) {
     indice->registros[indice->n_registros - 1] = ri;
 
     // Ordenar registros em ordem crescente
-    heapsort(indice);
+    Heapsort(indice);
 }
 
 // Remove do índice em RAM por id

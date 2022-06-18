@@ -577,8 +577,6 @@ void funcionalidade5(int tipo_do_arquivo, string_t arquivo_de_dados, string_t ar
 void remover_do_arquivo_por_posicao(int tipo_do_arquivo, FILE *arq_entrada, cabecalho_t *cabecalho, indice_t *indice, long long int posicao_de_remocao) {
     // Ler do cabecalho nroRegRem e topo do cabecalho 
 
-    ler_cabecalho_de_arquivo(cabecalho, tipo_do_arquivo, arq_entrada);
-
     int nroRegRem = get_nroRegRem(cabecalho);
     long long int topo = get_topo(cabecalho);
 
@@ -608,6 +606,7 @@ void remover_do_arquivo_por_posicao(int tipo_do_arquivo, FILE *arq_entrada, cabe
         long long int byte_offset_a_remover = posicao_de_remocao;
 
         registro_t *reg = criar_registro();
+        fseek(arq_entrada, byte_offset_a_remover, SEEK_SET);
         int tam_reg = ler_registro(reg, tipo_do_arquivo, arq_entrada);
         set_removido(reg, '1'); // Marcar como logicamente removido
         remover_do_indice_por_id(tipo_do_arquivo, indice, get_id(reg)); // Remover do arquivo de índice
@@ -774,6 +773,7 @@ void funcionalidade6(int tipo_do_arquivo, string_t binario_entrada, string_t arq
 
             // Testar se outros batem com as outras especificações
             if (n_campos == 1) {
+                remover_do_arquivo_por_posicao(tipo_do_arquivo, arq_entrada, cabecalho, indice, posicao_de_remocao);                
             } else {
                 registro_t *reg = get_registro_em_posicao(tipo_do_arquivo, posicao_de_remocao, arq_entrada);
 

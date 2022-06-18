@@ -56,7 +56,7 @@ void heapify(indice_t *indice, int n, int i) {
 }
 
 // Função que executa o Heapsort nos registros de um índice em RAM
-void heapsort(indice_t *indice) {
+void Heapsort(indice_t *indice) {
     int n = get_n_registros(indice);
     
     // Construir Max Heap
