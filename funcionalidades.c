@@ -912,7 +912,7 @@ void inserir_registro(int tipo_do_arquivo, FILE *arq_entrada, cabecalho_t *cabec
                 reescrever_registro2_em_arquivo(registro_a_adicionar, tam_maior_reutilizavel, arq_entrada);
 
                 // Atualizar o topo para o próximo do registro que está sendo reutilizado
-                set_topo(cabecalho, get_proxRRN_removido(maior_registro_reutilizavel));
+                set_topo(cabecalho, get_proxByteOffset_removido(maior_registro_reutilizavel));
 
                 // Setar byteoffset do registro que está sendo reutilizado no registro de índice
                 set_byte_offset_registro_indice(ri, topo);
