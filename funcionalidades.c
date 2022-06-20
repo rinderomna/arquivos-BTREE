@@ -775,10 +775,12 @@ void funcionalidade6(int tipo_do_arquivo, string_t binario_entrada, string_t arq
             remove_quotes(valor_campos[i]); // Remover aspas se houver
         }
 
-        if (compare_strings_case_sensitive(nome_campos[0], "id") == 0) { // Remover buscando pelo índice
+        if (compare_strings_case_sensitive(nome_campos[0], "id") == 0) { // Remover buscando pelo índice primário
             int id_a_remover = atoi(valor_campos[0]);
 
             long long int posicao_de_remocao = busca_no_indice(indice, tipo_do_arquivo, id_a_remover, NULL);
+
+            if (posicao_de_remocao == -1) continue; // id não existe
 
             // Testar se outros batem com as outras especificações
             if (n_campos == 1) {
