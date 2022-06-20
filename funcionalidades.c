@@ -580,6 +580,8 @@ void remover_do_arquivo_por_posicao(int tipo_do_arquivo, FILE *arq_entrada, cabe
     int nroRegRem = get_nroRegRem(cabecalho);
     long long int topo = get_topo(cabecalho);
 
+    set_nroRegRem(cabecalho, nroRegRem + 1); // Incrementar no cabecalho número de registros removidos
+
     if (tipo_do_arquivo == 1) { // pilha de removido
         int RRN_a_remover = (int)posicao_de_remocao;
 
@@ -593,12 +595,12 @@ void remover_do_arquivo_por_posicao(int tipo_do_arquivo, FILE *arq_entrada, cabe
         set_removido(reg, '1'); // Marcar como logicamente removido
         remover_do_indice_por_id(tipo_do_arquivo, indice, get_id(reg)); // Remover do arquivo de índice
 
-        set_proxRRN_removido(reg, (int)topo);
-        set_topo(cabecalho, posicao_de_remocao);
+        set_proxRRN_removido(reg, (int)topo); // Faz o registro sendo removido apontar para o topo anterior
+        set_topo(cabecalho, posicao_de_remocao); // Coloca o registro sendo removido no topo
         
         // Retorna posição do ponteiro de arquivo para o início do registro
         fseek(arq_entrada, byte_offset_a_remover, SEEK_SET);
-
+        
         escrever_registro1_em_arquivo(reg, arq_entrada);
 
         destruir_registro(reg, 1);
@@ -609,6 +611,7 @@ void remover_do_arquivo_por_posicao(int tipo_do_arquivo, FILE *arq_entrada, cabe
         fseek(arq_entrada, byte_offset_a_remover, SEEK_SET);
         int tam_reg = ler_registro(reg, tipo_do_arquivo, arq_entrada);
         set_removido(reg, '1'); // Marcar como logicamente removido
+
         remover_do_indice_por_id(tipo_do_arquivo, indice, get_id(reg)); // Remover do arquivo de índice
 
         long long int posicao_do_anterior = -1; 
@@ -656,14 +659,12 @@ void remover_do_arquivo_por_posicao(int tipo_do_arquivo, FILE *arq_entrada, cabe
 
         destruir_registro(reg, 1);
     }
-
-    set_nroRegRem(cabecalho, nroRegRem + 1); // Incrementar no cabecalho número de registros removidos
 }
 
 void remover_sequencialmente(int tipo_do_arquivo, FILE *arq_entrada, cabecalho_t *cabecalho, indice_t *indice, string_t *nome_campos, string_t *valor_campos, int n_campos) {
     int proxRRN = get_proxRRN(cabecalho);
-    int proxByteOffset = get_proxByteOffset(cabecalho);
-    
+    long long int proxByteOffset = get_proxByteOffset(cabecalho);
+
     // Para cada tipo de arquivo
     if (tipo_do_arquivo == 1) {
         // Testar se há pelo menos 1 registro
@@ -675,12 +676,15 @@ void remover_sequencialmente(int tipo_do_arquivo, FILE *arq_entrada, cabecalho_t
         }
 
         // Leitura sequencial dos registros removendo os que batem e não são removidos
+
+        // Posicionando o ponteiro do arquivo logo após o cabeçalho
+        fseek(arq_entrada, TAM_CAB_1, SEEK_SET);
+
         for (int RRN_atual = 0; RRN_atual < proxRRN; RRN_atual++) {
             registro_t *reg = criar_registro();
-
             ler_registro(reg, tipo_do_arquivo, arq_entrada);
 
-            if (registro_encontrado(reg, nome_campos, valor_campos, n_campos)) {
+            if (registro_encontrado(reg, nome_campos, valor_campos, n_campos)) {           
                 remover_do_arquivo_por_posicao(tipo_do_arquivo, arq_entrada, cabecalho, indice, RRN_atual);
             }
 
@@ -696,7 +700,12 @@ void remover_sequencialmente(int tipo_do_arquivo, FILE *arq_entrada, cabecalho_t
         }
 
         // Leitura sequencial dos registros imprimindo os não removidos
+
+        // Posicionando o ponteiro do arquivo logo após o cabeçalho
+        fseek(arq_entrada, TAM_CAB_2, SEEK_SET);
+
         long long int byteOffset_atual = TAM_CAB_2;
+
         while (byteOffset_atual < proxByteOffset) {
             registro_t *reg = criar_registro();
 
@@ -714,8 +723,8 @@ void remover_sequencialmente(int tipo_do_arquivo, FILE *arq_entrada, cabecalho_t
 }
 
 void funcionalidade6(int tipo_do_arquivo, string_t binario_entrada, string_t arquivo_de_indice, int n) {
-    // Abrir arquivo para leitura de binário
-    FILE *arq_entrada = fopen(binario_entrada, "rb");
+    // Abrir arquivo para leitura e escrita de binário
+    FILE *arq_entrada = fopen(binario_entrada, "r+b");
     if (!arq_entrada) {
         printf("Falha no processamento do arquivo.\n");
         return;
@@ -783,7 +792,6 @@ void funcionalidade6(int tipo_do_arquivo, string_t binario_entrada, string_t arq
 
                 destruir_registro(reg, 1);
             }
-
         } else { // Leitura sequencial do arquivo removendo caso registro bata com as especificações
             remover_sequencialmente(tipo_do_arquivo, arq_entrada, cabecalho, indice, nome_campos, valor_campos, n_campos);
         }

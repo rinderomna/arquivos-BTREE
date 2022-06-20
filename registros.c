@@ -62,7 +62,7 @@ void escrever_registro1_em_arquivo(registro_t *reg1, FILE *fp) {
         int tamanho_registro_atual = 0;
 
         // Adicionar campo de 1 byte 'removido':
-        fwrite(&reg1->removido,sizeof(char),1,fp);
+        fwrite(&reg1->removido, sizeof(char), 1, fp);
         tamanho_registro_atual += 1;
 
         // Adicionar campo de próximo removido:
