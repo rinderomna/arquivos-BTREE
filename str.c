@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <ctype.h>
 
 #include "str.h"
 
@@ -253,9 +254,9 @@ void add_symbol_to_string(string_t *str, symbol_t new_symbol) {
 }
 
 string_t *split_string(string_t str, symbol_t separator, int *n_elems) {
-    *n_elems = 1;
+    int n = 1;
 
-    string_t *elements = (string_t *)malloc((*n_elems) * sizeof(string_t));
+    string_t *elements = (string_t *)malloc((n) * sizeof(string_t));
     
     int i = 0;
     int coming_from_separator = 0;
@@ -267,16 +268,18 @@ string_t *split_string(string_t str, symbol_t separator, int *n_elems) {
             i++;
         }
 
-        elements[*n_elems - 1] = cur_elem;
+        elements[n - 1] = cur_elem;
 
         if (str[i] == separator) {
             i++;
-            (*n_elems)++;
+            (n)++;
 
-            elements = (string_t *)realloc(elements, (*n_elems) * sizeof(string_t));
+            elements = (string_t *)realloc(elements, (n) * sizeof(string_t));
             coming_from_separator = 1;
         }
     } while (str[i] != '\0' || coming_from_separator);
+
+    if (n_elems) *n_elems = n;
     
     return elements;
 }
@@ -298,4 +301,43 @@ void remove_quotes(string_t string) {
         string[i] = string[i+1];
     }
     string[size - 2] = '\0';
+}
+
+string_t scan_quote_string() {
+    string_t str = create_empty_string();
+
+	/*
+	*	Use essa função para ler um campo string delimitado entre aspas (").
+	*	Chame ela na hora que for ler tal campo. Por exemplo:
+	*
+	*	A entrada está da seguinte forma:
+	*		nomeDoCampo "MARIA DA SILVA"
+	*
+	*	Para ler isso para as strings já alocadas str1 e str2 do seu programa, você faz:
+	*		scanf("%s", str1); // Vai salvar nomeDoCampo em str1
+	*		scan_quote_string(str2); // Vai salvar MARIA DA SILVA em str2 (sem as aspas)
+	*
+	*/
+
+	symbol_t R;
+
+	while((R = getchar()) != EOF && isspace(R)); // ignorar espaços, \r, \n...
+
+	if(R == 'N' || R == 'n') { // campo NULO
+		getchar(); getchar(); getchar(); // ignorar o "ULO" de NULO.
+	} else if(R == '\"') {
+        R = getchar();
+		while (R != '\"') {
+            add_symbol_to_string(&str, R);
+
+            R = getchar();
+        }
+	} else if(R != EOF){ // vc tá tentando ler uma string que não tá entre aspas! Fazer leitura normal %s então, pois deve ser algum inteiro ou algo assim...
+        ungetc(R, stdin);
+        
+		destroy_string(str);
+        str = read_until(stdin, ' ', NULL);
+	} 
+
+    return str;
 }

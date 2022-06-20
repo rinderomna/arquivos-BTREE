@@ -374,9 +374,8 @@ void funcionalidade3(int tipo_de_arquivo, string_t binario_entrada, int n) {
 
     // Ler nome_campos e valor_campos da entrada padrão
     for (int i = 0; i < n; i++) {
-        nome_campos[i] = read_until(stdin, ' ', NULL);
-        valor_campos[i] = read_until(stdin, '\n', NULL);
-        remove_quotes(valor_campos[i]); // Remover aspas se houver
+        nome_campos[i] = scan_quote_string();
+        valor_campos[i] = scan_quote_string();
     }
 
     // Realiza busca parametrizada para cada respectivo tipo de arquivo
@@ -770,9 +769,8 @@ void funcionalidade6(int tipo_do_arquivo, string_t binario_entrada, string_t arq
         string_t *valor_campos = (string_t *)malloc(n_campos * sizeof(string_t));
 
         for (int i = 0; i < n_campos; i++) {
-            nome_campos[i] = read_until(stdin, ' ', NULL);
-            valor_campos[i] = read_until(stdin, ' ', NULL);
-            remove_quotes(valor_campos[i]); // Remover aspas se houver
+            nome_campos[i] = scan_quote_string();
+            valor_campos[i] = scan_quote_string();
         }
 
         if (compare_strings_case_sensitive(nome_campos[0], "id") == 0) { // Remover buscando pelo índice primário
@@ -816,4 +814,70 @@ void funcionalidade6(int tipo_do_arquivo, string_t binario_entrada, string_t arq
     // Imprimir binário na tela de Arquivo de Dados e Arquivo de Índice, respectivamente
     binarioNaTela(binario_entrada);
     binarioNaTela(arquivo_de_indice);
+}
+
+void preencher_registro(registro_t *reg, string_t *campos) {
+    // id (campo obrigatório)
+    set_id(reg, atoi(campos[0]));
+
+    // Ano de fabricação
+    if (compare_strings_case_sensitive(campos[1], "NULO") == 0) {
+        set_ano(reg, -1);
+    } else {
+        set_ano(reg, atoi(campos[1]));
+    }
+
+    // Quantidade
+    if (compare_strings_case_sensitive(campos[2], "NULO") == 0) {
+        set_qtt(reg, -1);
+    } else {
+        set_qtt(reg, atoi(campos[2]));
+    }
+
+    // Sigla
+    if (compare_strings_case_sensitive(campos[3], "NULO") == 0) {
+        set_sigla(reg, NULL);
+    } else {
+        set_sigla(reg, campos[3]);
+    }
+
+    // Cidade
+    if (compare_strings_case_sensitive(campos[4], "NULO") == 0) {
+        set_cidade(reg, NULL);
+    } else {
+        set_cidade(reg, campos[4]);
+    }
+
+    // Marca
+    if (compare_strings_case_sensitive(campos[5], "NULO") == 0) {
+        set_marca(reg, NULL);
+    } else {
+        set_marca(reg, campos[5]);
+    }
+
+    // Modelo
+    if (compare_strings_case_sensitive(campos[6], "NULO") == 0) {
+        set_modelo(reg, NULL);
+    } else {
+        set_modelo(reg, campos[6]);
+    }
+}
+
+void funcionalidade7(int tipo_do_arquivo, string_t binario_entrada, string_t arquivo_de_indice, int n_insercoes) {
+    for (int insercao = 0; insercao < n_insercoes; insercao++) {
+        string_t *campos = (string_t *)malloc(7 * sizeof(string_t));
+
+        for (int i = 0; i < 7; i++) {
+            campos[i] = scan_quote_string();
+        }
+
+        registro_t *reg = criar_registro();
+
+        preencher_registro(reg, campos);
+
+        imprimir_registro(reg);
+
+        destroy_string_array(campos, 7);
+        destruir_registro(reg, 0);
+    }
 }
