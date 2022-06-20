@@ -25,5 +25,4 @@ string_t create_empty_string();
 void add_symbol_to_string(string_t *str, symbol_t new_symbol);
 string_t *split_string(string_t str, symbol_t separator, int *n_elems);
 void destroy_string_array(string_t *string_array, int n_elems);
-void remove_quotes(string_t string);
 string_t scan_quote_string();

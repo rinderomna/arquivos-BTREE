@@ -292,17 +292,6 @@ void destroy_string_array(string_t *string_array, int n_elems) {
     free(string_array);
 }
 
-void remove_quotes(string_t string) {
-    if(string[0] != '\"')
-        return;
-    
-    int size = string_length(string);
-    for(int i = 0; i < size - 1; i++) {
-        string[i] = string[i+1];
-    }
-    string[size - 2] = '\0';
-}
-
 string_t scan_quote_string() {
     string_t str = create_empty_string();
 
