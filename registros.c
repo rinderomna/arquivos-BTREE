@@ -59,200 +59,298 @@ void destruir_registro(registro_t *reg, int liberar_strings) {
 }
 
 void escrever_registro1_em_arquivo(registro_t *reg1, FILE *fp) { 
-        int tamanho_registro_atual = 0;
+    int tamanho_registro_atual = 0;
 
-        // Adicionar campo de 1 byte 'removido':
-        fwrite(&reg1->removido, sizeof(char), 1, fp);
-        tamanho_registro_atual += 1;
+    // Adicionar campo de 1 byte 'removido':
+    fwrite(&reg1->removido, sizeof(char), 1, fp);
+    tamanho_registro_atual += 1;
 
-        // Adicionar campo de próximo removido:
-        fwrite(&reg1->proxRRN, sizeof(int), 1, fp);
-        tamanho_registro_atual += sizeof(int);
+    // Adicionar campo de próximo removido:
+    fwrite(&reg1->proxRRN, sizeof(int), 1, fp);
+    tamanho_registro_atual += sizeof(int);
+
+    // Adicionar campo id, o qual é obrigatório:
+    fwrite(&reg1->id, sizeof(int), 1, fp);
+    tamanho_registro_atual += sizeof(int);
+
+    // Adicionar campo opcional de tamanho fixo Ano de Fabricação:
+    fwrite(&reg1->ano, sizeof(int), 1, fp);
+    tamanho_registro_atual += sizeof(int);
     
-        // Adicionar campo id, o qual é obrigatório:
-        fwrite(&reg1->id, sizeof(int), 1, fp);
+    // Adicionar campo opcional de tamanho fixo Quantidade:
+    fwrite(&reg1->qtt, sizeof(int), 1, fp);
+    tamanho_registro_atual += sizeof(int);
+
+    // Adicionar campo opcional de tamanho fixo Sigla do Estado:
+    if (string_length(reg1->sigla) > 0) {
+        fwrite(reg1->sigla, sizeof(char), 2, fp);
+    } else {
+        // caso campo de tamanho fixo 2 esteja vazio, completar com lixo
+        char lixo[3] = "$$"; 
+        fwrite(lixo, sizeof(char), 2, fp);
+    }
+    tamanho_registro_atual += 2;
+
+    // Adicionar campo de tamanho variável e opcional Cidade, caso haja:
+    int tamCidade = 0;
+    if (reg1->cidade) tamCidade = string_length(reg1->cidade);
+    if (tamCidade > 0) {
+        // primeiro, escrever tamanho do nome da cidade
+        fwrite(&tamCidade, sizeof(int), 1, fp);
         tamanho_registro_atual += sizeof(int);
 
-        // Adicionar campo opcional de tamanho fixo Ano de Fabricação:
-        fwrite(&reg1->ano, sizeof(int), 1, fp);
+        // depois, o código do campo cidade
+        char codC5 = '0'; // Código de Cidade = 0
+        fwrite(&codC5, sizeof(char), 1, fp);
+        tamanho_registro_atual += sizeof(char);
+
+        // e então, a o nome da cidade em si
+        fwrite(reg1->cidade, sizeof(char), tamCidade, fp);
+        tamanho_registro_atual += tamCidade;
+    }
+
+    // Adicionar campo de tamanho variável e opcional Marca, caso haja:
+    int tamMarca = 0;
+    if (reg1->marca) tamMarca = string_length(reg1->marca);
+    if (tamMarca > 0) {
+        // primeiro, escrever o tamanho do nome da marca
+        fwrite(&tamMarca, sizeof(int), 1, fp);
         tamanho_registro_atual += sizeof(int);
-       
-        // Adicionar campo opcional de tamanho fixo Quantidade:
-        fwrite(&reg1->qtt, sizeof(int), 1, fp);
+
+        // depois, o código do campo Marca
+        char codC6 = '1'; // Código de Marca = 1
+        fwrite(&codC6, sizeof(char), 1, fp);
+        tamanho_registro_atual += sizeof(char);
+
+        // e então, o nome da Marca em si
+        fwrite(reg1->marca, sizeof(char), tamMarca, fp);
+        tamanho_registro_atual += tamMarca;
+    }
+
+    // Adicionar campo de tamanho variável e opcional Modelo, caso haja:
+    int tamModelo = 0;
+    if (reg1->modelo) tamModelo = string_length(reg1->modelo);
+    if (tamModelo > 0) {
+        // primeiro, escrever o tamanho do nome do modelo
+        fwrite(&tamModelo, sizeof(int), 1, fp);
         tamanho_registro_atual += sizeof(int);
 
-        // Adicionar campo opcional de tamanho fixo Sigla do Estado:
-        if (string_length(reg1->sigla) > 0) {
-            fwrite(reg1->sigla, sizeof(char), 2, fp);
-        } else {
-            // caso campo de tamanho fixo 2 esteja vazio, completar com lixo
-            char lixo[3] = "$$"; 
-            fwrite(lixo, sizeof(char), 2, fp);
-        }
-        tamanho_registro_atual += 2;
+        // depois, o código do campo Modelo
+        char codC7 = '2'; // Código de Modelo = 2
+        fwrite(&codC7, sizeof(char), 1, fp);
+        tamanho_registro_atual += sizeof(char);
 
-        // Adicionar campo de tamanho variável e opcional Cidade, caso haja:
-        int tamCidade = 0;
-        if (reg1->cidade) tamCidade = string_length(reg1->cidade);
-        if (tamCidade > 0) {
-            // primeiro, escrever tamanho do nome da cidade
-            fwrite(&tamCidade, sizeof(int), 1, fp);
-            tamanho_registro_atual += sizeof(int);
+        // e então, o nome do Modelo em si
+        fwrite(reg1->modelo, sizeof(char), tamModelo, fp);
+        tamanho_registro_atual += tamModelo;
+    }
 
-            // depois, o código do campo cidade
-            char codC5 = '0'; // Código de Cidade = 0
-            fwrite(&codC5, sizeof(char), 1, fp);
-            tamanho_registro_atual += sizeof(char);
-
-            // e então, a o nome da cidade em si
-            fwrite(reg1->cidade, sizeof(char), tamCidade, fp);
-            tamanho_registro_atual += tamCidade;
-        }
-
-        // Adicionar campo de tamanho variável e opcional Marca, caso haja:
-        int tamMarca = 0;
-        if (reg1->marca) tamMarca = string_length(reg1->marca);
-        if (tamMarca > 0) {
-            // primeiro, escrever o tamanho do nome da marca
-            fwrite(&tamMarca, sizeof(int), 1, fp);
-            tamanho_registro_atual += sizeof(int);
-
-            // depois, o código do campo Marca
-            char codC6 = '1'; // Código de Marca = 1
-            fwrite(&codC6, sizeof(char), 1, fp);
-            tamanho_registro_atual += sizeof(char);
-
-            // e então, o nome da Marca em si
-            fwrite(reg1->marca, sizeof(char), tamMarca, fp);
-            tamanho_registro_atual += tamMarca;
-        }
-
-        // Adicionar campo de tamanho variável e opcional Modelo, caso haja:
-        int tamModelo = 0;
-        if (reg1->modelo) tamModelo = string_length(reg1->modelo);
-        if (tamModelo > 0) {
-            // primeiro, escrever o tamanho do nome do modelo
-            fwrite(&tamModelo, sizeof(int), 1, fp);
-            tamanho_registro_atual += sizeof(int);
-
-            // depois, o código do campo Modelo
-            char codC7 = '2'; // Código de Modelo = 2
-            fwrite(&codC7, sizeof(char), 1, fp);
-            tamanho_registro_atual += sizeof(char);
-
-            // e então, o nome do Modelo em si
-            fwrite(reg1->modelo, sizeof(char), tamModelo, fp);
-            tamanho_registro_atual += tamModelo;
-        }
-
-        // Completar resto do registro de tamanho fixo com lixo:
-        char *lixo = cria_lixo(TAM_REG1 - tamanho_registro_atual);
-        fwrite(lixo, sizeof(char), TAM_REG1 - tamanho_registro_atual, fp);
-        free(lixo);
+    // Completar resto do registro de tamanho fixo com lixo:
+    char *lixo = cria_lixo(TAM_REG1 - tamanho_registro_atual);
+    fwrite(lixo, sizeof(char), TAM_REG1 - tamanho_registro_atual, fp);
+    free(lixo);
 }
 
 // Retorna tamanho do registro
 int escrever_registro2_em_arquivo(registro_t *reg2, FILE *fp) {
-        // Contabilizar tamanho do registro depois do quinto byte:
-        int tamanho_registro_atual = 0;
-        tamanho_registro_atual += 8; // prox - long long int - 8 bytes
-        tamanho_registro_atual += 4; // id - int - 4 bytes
-        tamanho_registro_atual += 4; // ano - int - 4 bytes
-        tamanho_registro_atual += 4; // qtt - int - 4 bytes
-        tamanho_registro_atual += 2; // sigla - char[2] - 2 bytes
+    // Contabilizar tamanho do registro depois do quinto byte:
+    int tamanho_registro_atual = 0;
+    tamanho_registro_atual += 8; // prox - long long int - 8 bytes
+    tamanho_registro_atual += 4; // id - int - 4 bytes
+    tamanho_registro_atual += 4; // ano - int - 4 bytes
+    tamanho_registro_atual += 4; // qtt - int - 4 bytes
+    tamanho_registro_atual += 2; // sigla - char[2] - 2 bytes
 
-        int tamCidade = 0;
-        if (reg2->cidade) tamCidade = string_length(reg2->cidade);
-        if (tamCidade > 0) {
-            tamanho_registro_atual += 4; // tamCidade - int - 4 bytes
-            tamanho_registro_atual += 1; // codC5 - char - 1 byte
-            tamanho_registro_atual += tamCidade; // cidade - string - n bytes
-        }
+    int tamCidade = 0;
+    if (reg2->cidade) tamCidade = string_length(reg2->cidade);
+    if (tamCidade > 0) {
+        tamanho_registro_atual += 4; // tamCidade - int - 4 bytes
+        tamanho_registro_atual += 1; // codC5 - char - 1 byte
+        tamanho_registro_atual += tamCidade; // cidade - string - n bytes
+    }
 
-        int tamMarca = 0;
-        if (reg2->marca) tamMarca = string_length(reg2->marca);
-        if (tamMarca > 0) {
-            tamanho_registro_atual += 4; // tamMarca - int - 4 bytes
-            tamanho_registro_atual += 1; // codC6 - char - 1 byte
-            tamanho_registro_atual += tamMarca; // marca - string - n bytes
-        }
+    int tamMarca = 0;
+    if (reg2->marca) tamMarca = string_length(reg2->marca);
+    if (tamMarca > 0) {
+        tamanho_registro_atual += 4; // tamMarca - int - 4 bytes
+        tamanho_registro_atual += 1; // codC6 - char - 1 byte
+        tamanho_registro_atual += tamMarca; // marca - string - n bytes
+    }
 
-        int tamModelo = 0;
-        if (reg2->modelo) tamModelo = string_length(reg2->modelo);
-        if (tamModelo > 0) {
-            tamanho_registro_atual += 4; // tamModelo - int - 4 bytes
-            tamanho_registro_atual += 1; // codC7 - char - 1 byte
-            tamanho_registro_atual += tamModelo; // modelo - string - n bytes
-        }
+    int tamModelo = 0;
+    if (reg2->modelo) tamModelo = string_length(reg2->modelo);
+    if (tamModelo > 0) {
+        tamanho_registro_atual += 4; // tamModelo - int - 4 bytes
+        tamanho_registro_atual += 1; // codC7 - char - 1 byte
+        tamanho_registro_atual += tamModelo; // modelo - string - n bytes
+    }
 
-        // Adicionar campo de 1 byte 'removido':
-        fwrite(&reg2->removido, sizeof(char), 1, fp);
+    // Adicionar campo de 1 byte 'removido':
+    fwrite(&reg2->removido, sizeof(char), 1, fp);
 
-        // Adicionar campo tamanho do registro:
-        fwrite(&tamanho_registro_atual, sizeof(int), 1, fp);
+    // Adicionar campo tamanho do registro:
+    fwrite(&tamanho_registro_atual, sizeof(int), 1, fp);
 
-        // Adicionar campo de próximo removido:
-        fwrite(&reg2->proxByteOffset, sizeof(long long int), 1, fp);
+    // Adicionar campo de próximo removido:
+    fwrite(&reg2->proxByteOffset, sizeof(long long int), 1, fp);
+
+    // Adicionar campo id, o qual é obrigatório:
+    fwrite(&reg2->id, sizeof(int), 1, fp);
+
+    // Adicionar campo opcional de tamanho fixo Ano de Fabricação:
+    fwrite(&reg2->ano, sizeof(int), 1, fp);
     
-        // Adicionar campo id, o qual é obrigatório:
-        fwrite(&reg2->id, sizeof(int), 1, fp);
+    // Adicionar campo opcional de tamanho fixo Quantidade:
+    fwrite(&reg2->qtt, sizeof(int), 1, fp);
 
-        // Adicionar campo opcional de tamanho fixo Ano de Fabricação:
-        fwrite(&reg2->ano, sizeof(int), 1, fp);
-       
-        // Adicionar campo opcional de tamanho fixo Quantidade:
-        fwrite(&reg2->qtt, sizeof(int), 1, fp);
+    // Adicionar campo opcional de tamanho fixo Sigla do Estado:
+    if (string_length(reg2->sigla) > 0) {
+        fwrite(reg2->sigla, sizeof(char), 2, fp);
+    } else {
+        // caso campo de tamanho fixo 2 esteja vazio, completar com lixo
+        char lixo[3] = "$$"; 
+        fwrite(lixo, sizeof(char), 2, fp);
+    }
 
-        // Adicionar campo opcional de tamanho fixo Sigla do Estado:
-        if (string_length(reg2->sigla) > 0) {
-            fwrite(reg2->sigla, sizeof(char), 2, fp);
-        } else {
-            // caso campo de tamanho fixo 2 esteja vazio, completar com lixo
-            char lixo[3] = "$$"; 
-            fwrite(lixo, sizeof(char), 2, fp);
-        }
+    // Adicionar campo de tamanho variável e opcional Cidade, caso haja:
+    if (tamCidade > 0) {
+        // primeiro, escrever tamanho do nome da cidade
+        fwrite(&tamCidade, sizeof(int), 1, fp);
 
-        // Adicionar campo de tamanho variável e opcional Cidade, caso haja:
-        if (tamCidade > 0) {
-            // primeiro, escrever tamanho do nome da cidade
-            fwrite(&tamCidade, sizeof(int), 1, fp);
+        // depois, o código do campo cidade
+        char codC5 = '0'; // Código de Cidade = 0
+        fwrite(&codC5, sizeof(char), 1, fp);
 
-            // depois, o código do campo cidade
-            char codC5 = '0'; // Código de Cidade = 0
-            fwrite(&codC5, sizeof(char), 1, fp);
+        // e então, a o nome da cidade em si
+        fwrite(reg2->cidade, sizeof(char), tamCidade, fp);
+    }
 
-            // e então, a o nome da cidade em si
-            fwrite(reg2->cidade, sizeof(char), tamCidade, fp);
-        }
+    // Adicionar campo de tamanho variável e opcional Marca, caso haja:
+    if (tamMarca > 0) {
+        // primeiro, escrever o tamanho do nome da marca
+        fwrite(&tamMarca, sizeof(int), 1, fp);
 
-        // Adicionar campo de tamanho variável e opcional Marca, caso haja:
-        if (tamMarca > 0) {
-            // primeiro, escrever o tamanho do nome da marca
-            fwrite(&tamMarca, sizeof(int), 1, fp);
+        // depois, o código do campo Marca
+        char codC6 = '1'; // Código de Marca = 1
+        fwrite(&codC6, sizeof(char), 1, fp);
 
-            // depois, o código do campo Marca
-            char codC6 = '1'; // Código de Marca = 1
-            fwrite(&codC6, sizeof(char), 1, fp);
+        // e então, o nome da Marca em si
+        fwrite(reg2->marca, sizeof(char), tamMarca, fp);
+    }
 
-            // e então, o nome da Marca em si
-            fwrite(reg2->marca, sizeof(char), tamMarca, fp);
-        }
+    // Adicionar campo de tamanho variável e opcional Modelo, caso haja:
+    if (tamModelo > 0) {
+        // primeiro, escrever o tamanho do nome do modelo
+        fwrite(&tamModelo, sizeof(int), 1, fp);
 
-        // Adicionar campo de tamanho variável e opcional Modelo, caso haja:
-        if (tamModelo > 0) {
-            // primeiro, escrever o tamanho do nome do modelo
-            fwrite(&tamModelo, sizeof(int), 1, fp);
+        // depois, o código do campo Modelo
+        char codC7 = '2'; // Código de Modelo = 2
+        fwrite(&codC7, sizeof(char), 1, fp);
 
-            // depois, o código do campo Modelo
-            char codC7 = '2'; // Código de Modelo = 2
-            fwrite(&codC7, sizeof(char), 1, fp);
+        // e então, o nome do Modelo em si
+        fwrite(reg2->modelo, sizeof(char), tamModelo, fp);
+    }
 
-            // e então, o nome do Modelo em si
-            fwrite(reg2->modelo, sizeof(char), tamModelo, fp);
-        }
+    // Retorna o tamanho total do registro, incluindo os 5 bytes iniciais
+    return tamanho_registro_atual + 5; 
+}
 
-        // Retorna o tamanho total do registro, incluindo os 5 bytes iniciais
-        return tamanho_registro_atual + 5; 
+void reescrever_registro2_em_arquivo(registro_t *reg2, int tam_registro_anterior, FILE *fp) {
+    int tamanho_registro_atual = tamanho_total_do_registro(2, reg2);
+
+    // Adicionar campo de 1 byte 'removido':
+    fwrite(&reg2->removido, sizeof(char), 1, fp);
+
+    // Pular o campo de tamanho do registro, pois manterá o do anterior que é maior:
+    fseek(fp, sizeof(int), SEEK_CUR);
+
+    // Adicionar campo de próximo removido:
+    fwrite(&reg2->proxByteOffset, sizeof(long long int), 1, fp);
+
+    // Adicionar campo id, o qual é obrigatório:
+    fwrite(&reg2->id, sizeof(int), 1, fp);
+
+    // Adicionar campo opcional de tamanho fixo Ano de Fabricação:
+    fwrite(&reg2->ano, sizeof(int), 1, fp);
+    
+    // Adicionar campo opcional de tamanho fixo Quantidade:
+    fwrite(&reg2->qtt, sizeof(int), 1, fp);
+
+    // Adicionar campo opcional de tamanho fixo Sigla do Estado:
+    if (string_length(reg2->sigla) > 0) {
+        fwrite(reg2->sigla, sizeof(char), 2, fp);
+    } else {
+        // caso campo de tamanho fixo 2 esteja vazio, completar com lixo
+        char lixo[3] = "$$"; 
+        fwrite(lixo, sizeof(char), 2, fp);
+    }
+
+    // Adicionar campo de tamanho variável e opcional Cidade, caso haja:
+    int tamCidade = 0;
+    if (reg2->cidade) tamCidade = string_length(reg2->cidade);
+    if (tamCidade > 0) {
+        // primeiro, escrever tamanho do nome da cidade
+        fwrite(&tamCidade, sizeof(int), 1, fp);
+
+        // depois, o código do campo cidade
+        char codC5 = '0'; // Código de Cidade = 0
+        fwrite(&codC5, sizeof(char), 1, fp);
+
+        // e então, a o nome da cidade em si
+        fwrite(reg2->cidade, sizeof(char), tamCidade, fp);
+    }
+
+    // Adicionar campo de tamanho variável e opcional Marca, caso haja:
+    int tamMarca = 0;
+    if (reg2->marca) tamMarca = string_length(reg2->marca);
+    if (tamMarca > 0) {
+        // primeiro, escrever o tamanho do nome da marca
+        fwrite(&tamMarca, sizeof(int), 1, fp);
+
+        // depois, o código do campo Marca
+        char codC6 = '1'; // Código de Marca = 1
+        fwrite(&codC6, sizeof(char), 1, fp);
+
+        // e então, o nome da Marca em si
+        fwrite(reg2->marca, sizeof(char), tamMarca, fp);
+    }
+
+    // Adicionar campo de tamanho variável e opcional Modelo, caso haja:
+    int tamModelo = 0;
+    if (reg2->modelo) tamModelo = string_length(reg2->modelo);
+    if (tamModelo > 0) {
+        // primeiro, escrever o tamanho do nome do modelo
+        fwrite(&tamModelo, sizeof(int), 1, fp);
+
+        // depois, o código do campo Modelo
+        char codC7 = '2'; // Código de Modelo = 2
+        fwrite(&codC7, sizeof(char), 1, fp);
+
+        // e então, o nome do Modelo em si
+        fwrite(reg2->modelo, sizeof(char), tamModelo, fp);
+    }
+
+    // Escrever lixo no final
+    char *lixo = cria_lixo(tam_registro_anterior - tamanho_registro_atual);
+    fwrite(lixo, sizeof(char), tam_registro_anterior - tamanho_registro_atual, fp);
+    free(lixo);
+}
+
+void escrever_registro_em_posicao(int tipo_do_arquivo, registro_t *reg, long long int posicao, FILE *fp) {
+    if (tipo_do_arquivo != 1 && tipo_do_arquivo != 2) return;
+
+    long long int byte_offset = 0;
+
+    if (tipo_do_arquivo == 1) {
+        int RRN = (int)posicao;
+        byte_offset = TAM_CAB_1 + RRN * TAM_REG1;
+    } else {
+        byte_offset = posicao;
+    }
+
+    fseek(fp, byte_offset, SEEK_SET);
+
+    escrever_registro1_em_arquivo(reg, fp);
 }
 
 registro_t *get_registro_em_posicao(int tipo_do_arquivo, long long int posicao, FILE *fp) {
@@ -392,6 +490,30 @@ void imprimir_registro(registro_t *reg) {
     }
 
     new_lines(2);
+}
+
+int tamanho_total_do_registro(int tipo_do_arquivo, registro_t *reg) {
+    if (tipo_do_arquivo == 1) {
+        return TAM_REG1;
+    } else if (tipo_do_arquivo == 2) {
+        int tam_reg = 25; // campos fixos iniciais
+
+        if (reg->cidade && string_length(reg->cidade) > 0) {
+            tam_reg += 5 + string_length(reg->cidade);
+        }
+
+        if (reg->marca && string_length(reg->marca) > 0) {
+            tam_reg += 5 + string_length(reg->cidade);
+        }
+
+        if (reg->modelo && string_length(reg->cidade) > 0) {
+            tam_reg += 5 + string_length(reg->cidade);
+        }
+
+        return tam_reg;
+    }
+
+    return -1;
 }
 
 // Getters e Setters:

@@ -778,7 +778,11 @@ void funcionalidade6(int tipo_do_arquivo, string_t binario_entrada, string_t arq
 
             long long int posicao_de_remocao = busca_no_indice(indice, tipo_do_arquivo, id_a_remover, NULL);
 
-            if (posicao_de_remocao == -1) continue; // id não existe
+            if (posicao_de_remocao == -1) { // id não existe
+                destroy_string_array(nome_campos, n_campos);
+                destroy_string_array(valor_campos, n_campos);
+                continue; 
+            }
 
             // Testar se outros batem com as outras especificações
             if (n_campos == 1) {
@@ -821,49 +825,156 @@ void preencher_registro(registro_t *reg, string_t *campos) {
     set_id(reg, atoi(campos[0]));
 
     // Ano de fabricação
-    if (compare_strings_case_sensitive(campos[1], "NULO") == 0) {
-        set_ano(reg, -1);
-    } else {
+    if (campos[1] && string_length(campos[1]) > 0) {
         set_ano(reg, atoi(campos[1]));
+    } else {
+        set_ano(reg, -1);
     }
 
     // Quantidade
-    if (compare_strings_case_sensitive(campos[2], "NULO") == 0) {
-        set_qtt(reg, -1);
-    } else {
+    if (campos[2] && string_length(campos[2]) > 0) {
         set_qtt(reg, atoi(campos[2]));
+    } else {
+        set_qtt(reg, -1);
     }
 
-    // Sigla
-    if (compare_strings_case_sensitive(campos[3], "NULO") == 0) {
-        set_sigla(reg, NULL);
-    } else {
-        set_sigla(reg, campos[3]);
+    set_sigla(reg, campos[3]);
+    set_cidade(reg, campos[4]);
+    set_marca(reg, campos[5]);
+    set_modelo(reg, campos[6]);
+}
+
+void inserir_registro(int tipo_do_arquivo, FILE *arq_entrada, cabecalho_t *cabecalho, indice_t *indice, registro_t *registro_a_adicionar) {
+    // Criar registro de índice que será adicionado ao índice
+    registro_de_indice_t *ri = criar_registro_indice();
+
+    // Setando o id deste registro de índice
+    set_id_registro_indice(ri, get_id(registro_a_adicionar));
+
+    // Ler topo do cabecalho 
+
+    long long int topo = get_topo(cabecalho);
+
+    if (tipo_do_arquivo == 1) { // desempilhar ou final
+        if (topo == -1) { 
+            // Inserir no final do arquivo
+            fseek(arq_entrada, 0, SEEK_END);
+            escrever_registro1_em_arquivo(registro_a_adicionar, arq_entrada);
+
+            // Setar este RRN no registro de índice
+            int proxRRN = get_proxRRN(cabecalho);
+            set_rrn_registro_indice(ri, proxRRN);
+
+            // Alterar proxRRN no cabecalho
+            set_proxRRN(cabecalho, proxRRN + 1);
+        } else {
+            // Buscando o registro que será reutilizado no topo anterior
+            registro_t *registro_reutilizado = get_registro_em_posicao(tipo_do_arquivo, topo, arq_entrada);
+
+            // Atualizando topo para o próximo do registro que será reutilizado
+            set_topo(cabecalho, get_proxRRN_removido(registro_reutilizado));
+            destruir_registro(registro_reutilizado, 1);
+
+            // Escrever na posição do registro que está sendo reutilizado (topo anterior)
+            escrever_registro_em_posicao(tipo_do_arquivo, registro_a_adicionar, topo, arq_entrada); 
+
+            // Setar esta posicao no registro de índice (topo anterior)
+            set_rrn_registro_indice(ri, topo);
+
+            // Diminuir número de registros removidos
+            int nroRegRem = get_nroRegRem(cabecalho);
+            set_nroRegRem(cabecalho, nroRegRem - 1);
+        }
+    } else if (tipo_do_arquivo == 2) { // tirar da lista ou final
+        if (topo == -1) {
+            // Inserir no final do arquivo
+            fseek(arq_entrada, 0, SEEK_END);
+            int tam_reg = escrever_registro2_em_arquivo(registro_a_adicionar, arq_entrada);
+
+            // Setar este byteoffset no registro de índice
+            int proxByteOffset = get_proxByteOffset(cabecalho);
+            set_byte_offset_registro_indice(ri, proxByteOffset);
+
+            // Alterar proxRRN no cabecalho
+            set_proxByteOffset(cabecalho, proxByteOffset + tam_reg);
+        } else { // Worst Fit
+            // Buscando o maior registro reutilizável no topo da lista ordenada
+            registro_t *maior_registro_reutilizavel = get_registro_em_posicao(tipo_do_arquivo, topo, arq_entrada);
+
+            int tam_maior_reutilizavel = tamanho_total_do_registro(tipo_do_arquivo, maior_registro_reutilizavel);
+            int tam_reg_a_adicionar = tamanho_total_do_registro(tipo_do_arquivo, registro_a_adicionar);
+
+            if (tam_reg_a_adicionar <= tam_maior_reutilizavel) { // Testar se cabe
+                // Posiciona ponteiro do arquivo onde irá reutilizar
+                fseek(arq_entrada, topo, SEEK_SET);
+
+                // Escrever em cima o registro sendo utilizado
+                reescrever_registro2_em_arquivo(registro_a_adicionar, tam_maior_reutilizavel, arq_entrada);
+
+                // Atualizar o topo para o próximo do registro que está sendo reutilizado
+                set_topo(cabecalho, get_proxRRN_removido(maior_registro_reutilizavel));
+
+                // Setar byteoffset do registro que está sendo reutilizado no registro de índice
+                set_byte_offset_registro_indice(ri, topo);
+
+                // Diminuir número de registros removidos
+                int nroRegRem = get_nroRegRem(cabecalho);
+                set_nroRegRem(cabecalho, nroRegRem - 1);
+            } else { // Não cabe -> Insere no final
+                // Inserir no final do arquivo
+                fseek(arq_entrada, 0, SEEK_END);
+                int tam_reg = escrever_registro2_em_arquivo(registro_a_adicionar, arq_entrada);
+
+                // Setar este byteoffset no registro de índice
+                int proxByteOffset = get_proxByteOffset(cabecalho);
+                set_byte_offset_registro_indice(ri, proxByteOffset);    
+
+                // Alterar proxRRN no cabecalho
+                set_proxByteOffset(cabecalho, proxByteOffset + tam_reg);
+            }
+
+            destruir_registro(maior_registro_reutilizavel, 1);
+        }
     }
 
-    // Cidade
-    if (compare_strings_case_sensitive(campos[4], "NULO") == 0) {
-        set_cidade(reg, NULL);
-    } else {
-        set_cidade(reg, campos[4]);
-    }
-
-    // Marca
-    if (compare_strings_case_sensitive(campos[5], "NULO") == 0) {
-        set_marca(reg, NULL);
-    } else {
-        set_marca(reg, campos[5]);
-    }
-
-    // Modelo
-    if (compare_strings_case_sensitive(campos[6], "NULO") == 0) {
-        set_modelo(reg, NULL);
-    } else {
-        set_modelo(reg, campos[6]);
-    }
+    adicionar_registro_a_indice(indice, ri);
 }
 
 void funcionalidade7(int tipo_do_arquivo, string_t binario_entrada, string_t arquivo_de_indice, int n_insercoes) {
+    // Abrir arquivo para leitura e escrita de binário
+    FILE *arq_entrada = fopen(binario_entrada, "r+b");
+    if (!arq_entrada) {
+        printf("Falha no processamento do arquivo.\n");
+        return;
+    }
+
+    // Ler cabecalho e testar consistência
+    cabecalho_t *cabecalho = criar_cabecalho();
+
+    ler_cabecalho_de_arquivo(cabecalho, tipo_do_arquivo, arq_entrada);
+    char status = get_status(cabecalho);
+    
+    // Testar consistência do arquivo
+    if (status == '0') {
+        printf("Falha no processamento do arquivo.\n");
+        destruir_cabecalho(cabecalho);
+        fclose(arq_entrada);
+
+        return;
+    }
+
+    // Arquivo potencialmente inconsistente neste ponto
+    set_status(cabecalho, '0');
+    escrever_cabecalho_em_arquivo(cabecalho, tipo_do_arquivo, arq_entrada);
+
+    // Carregar índice para RAM
+    indice_t *indice = ler_indice(tipo_do_arquivo, arquivo_de_indice);
+
+    if (!indice) {
+        printf("Falha no processamento do arquivo.\n");
+        return;
+    }
+
     for (int insercao = 0; insercao < n_insercoes; insercao++) {
         string_t *campos = (string_t *)malloc(7 * sizeof(string_t));
 
@@ -871,13 +982,28 @@ void funcionalidade7(int tipo_do_arquivo, string_t binario_entrada, string_t arq
             campos[i] = scan_quote_string();
         }
 
-        registro_t *reg = criar_registro();
+        registro_t *registro_a_adicionar = criar_registro();
 
-        preencher_registro(reg, campos);
+        preencher_registro(registro_a_adicionar, campos);
 
-        imprimir_registro(reg);
+        inserir_registro(tipo_do_arquivo, arq_entrada, cabecalho, indice, registro_a_adicionar);
 
         destroy_string_array(campos, 7);
-        destruir_registro(reg, 0);
+        destruir_registro(registro_a_adicionar, 0);
     }
+
+    // Arquivo consistente após todas as alterações realizadas:
+    set_status(cabecalho, '1'); 
+    escrever_cabecalho_em_arquivo(cabecalho, tipo_do_arquivo, arq_entrada);
+    destruir_cabecalho(cabecalho);
+
+    // Escrever índice em RAM em arquivo
+    escrever_indice(indice, tipo_do_arquivo, arquivo_de_indice);
+    destruir_indice(indice);
+
+    fclose(arq_entrada);
+
+    // Imprimir binário na tela de Arquivo de Dados e Arquivo de Índice, respectivamente
+    binarioNaTela(binario_entrada);
+    binarioNaTela(arquivo_de_indice);
 }

@@ -17,6 +17,9 @@ void escrever_registro1_em_arquivo(registro_t *reg1, FILE *fp);
 // Escreve registro tipo 2 em arquivo já aberto para escrita
 int escrever_registro2_em_arquivo(registro_t *reg2, FILE *fp);
 
+// Escrever registro tipo 2 em cima de registro já existente
+void reescrever_registro2_em_arquivo(registro_t *reg2, int tam_registro_anterior, FILE *fp);
+
 // Lê registro de tamanho fixo armazenado, retornando tamanho total do registro lido
 // Precisa liberar string ao destruir registro lido
 int ler_registro(registro_t *reg, int tipo_do_registro, FILE *fp);
@@ -24,7 +27,14 @@ int ler_registro(registro_t *reg, int tipo_do_registro, FILE *fp);
 // Imprime informações de um registro em formato padrão
 void imprimir_registro(registro_t *reg);
 
+// Calcula o tamanho total de um registro baseado em seu tipo
+int tamanho_total_do_registro(int tipo_do_arquivo, registro_t *reg);
+
+// Busca o registro no arquivo na posição indicada, que pode ser rrn (tipo 1) ou byte offset (tipo 2)
 registro_t *get_registro_em_posicao(int tipo_do_arquivo, long long int posicao, FILE *fp);
+
+// Escreve o registro no arquivo na posição indicada, que pode ser rrn (tipo 1) ou byte offset (tipo 2)
+void escrever_registro_em_posicao(int tipo_do_arquivo, registro_t *reg, long long int posicao, FILE *fp);
 
 // Getters e Setters:
 void set_removido(registro_t *reg, char removido);
