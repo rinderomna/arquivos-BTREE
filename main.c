@@ -27,7 +27,6 @@ int main() {
     string_t binario_saida;
     string_t binario_entrada;
     string_t arquivo_de_indice;
-    indice_t *indice;
     int RRN;
     int n;
 
