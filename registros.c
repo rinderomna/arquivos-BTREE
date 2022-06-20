@@ -503,11 +503,11 @@ int tamanho_total_do_registro(int tipo_do_arquivo, registro_t *reg) {
         }
 
         if (reg->marca && string_length(reg->marca) > 0) {
-            tam_reg += 5 + string_length(reg->cidade);
+            tam_reg += 5 + string_length(reg->marca);
         }
 
-        if (reg->modelo && string_length(reg->cidade) > 0) {
-            tam_reg += 5 + string_length(reg->cidade);
+        if (reg->modelo && string_length(reg->modelo) > 0) {
+            tam_reg += 5 + string_length(reg->modelo);
         }
 
         return tam_reg;
