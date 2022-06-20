@@ -668,7 +668,6 @@ void remover_sequencialmente(int tipo_do_arquivo, FILE *arq_entrada, cabecalho_t
     if (tipo_do_arquivo == 1) {
         // Testar se há pelo menos 1 registro
         if (proxRRN == 0) {
-            printf("Registro inexistente.\n");
             fclose(arq_entrada);
 
             return;
@@ -993,6 +992,316 @@ void funcionalidade7(int tipo_do_arquivo, string_t binario_entrada, string_t arq
 
         destroy_string_array(campos, 7);
         destruir_registro(registro_a_adicionar, 0);
+    }
+
+    // Arquivo consistente após todas as alterações realizadas:
+    set_status(cabecalho, '1'); 
+    escrever_cabecalho_em_arquivo(cabecalho, tipo_do_arquivo, arq_entrada);
+    destruir_cabecalho(cabecalho);
+
+    // Escrever índice em RAM em arquivo
+    escrever_indice(indice, tipo_do_arquivo, arquivo_de_indice);
+    destruir_indice(indice);
+
+    fclose(arq_entrada);
+
+    // Imprimir binário na tela de Arquivo de Dados e Arquivo de Índice, respectivamente
+    binarioNaTela(binario_entrada);
+    binarioNaTela(arquivo_de_indice);
+}
+
+void alterar_registro(registro_t *reg, string_t *nome_campos_alteracao, string_t *valor_campos_alteracao, int n_campos_alteracao) {
+    string_t campos_validos[] = {"id", "ano", "qtt", "sigla", "cidade", "marca", "modelo"};
+
+    if (get_removido(reg) == '1') return;
+
+    for (int alteracao = 0; alteracao < n_campos_alteracao; alteracao++) {
+        // Testar cada um dos campos válidos para saber se é um campo da condição atual
+        for (int k = 0; k < 7; k++) {
+            int num = 0;
+            if (compare_strings_case_sensitive(nome_campos_alteracao[alteracao], campos_validos[k]) == 0) {
+                // id, ano e qtt (k = 0, 1 ou 2) têm de ser convertidos para inteiro
+                if (k < 3) {
+                    if (string_length(valor_campos_alteracao[alteracao]) > 0) {
+                        num = atoi(valor_campos_alteracao[alteracao]);
+                    } else {
+                        num = -1;
+                    }
+                }
+
+                switch (k) {
+                    case 0:
+                        set_id(reg, num);
+                        break;
+                    case 1:
+                        set_ano(reg, num);
+                        break;
+                    case 2:
+                        set_qtt(reg, num);
+                        break;
+                    case 3:
+                        set_sigla(reg, valor_campos_alteracao[alteracao]);
+                        break;
+                    case 4:
+                        set_cidade(reg, valor_campos_alteracao[alteracao]);
+                        break;
+                    case 5:
+                        set_marca(reg, valor_campos_alteracao[alteracao]);
+                        break;
+                    case 6:
+                        set_modelo(reg, valor_campos_alteracao[alteracao]);
+                        break;
+                }
+                break;
+            }
+        }
+    }
+
+
+}
+
+
+void alterar_do_arquivo_por_posicao(int tipo_do_arquivo, FILE *arq_entrada, cabecalho_t *cabecalho, indice_t *indice, long long int posicao_de_alteracao, string_t *nome_campos_alteracao, string_t *valor_campos_alteracao, int n_campos_alteracao) {
+    // Ler do cabecalho nroRegRem e topo do cabecalho 
+
+    long long int topo = get_topo(cabecalho);
+
+    //set_nroRegRem(cabecalho, nroRegRem + 1); // Incrementar no cabecalho número de registros removidos
+
+    if (tipo_do_arquivo == 1) { // pilha de removido
+        int RRN_a_alterar = (int)posicao_de_alteracao;
+
+        // Calcular Byte Offset para RRN passado
+        long long int byte_offset_a_alterar = TAM_CAB_1 + RRN_a_alterar * TAM_REG1;
+
+        registro_t *reg = criar_registro();
+
+        fseek(arq_entrada, byte_offset_a_alterar, SEEK_SET);
+        ler_registro(reg, tipo_do_arquivo, arq_entrada);
+
+        alterar_registro(reg, nome_campos_alteracao, valor_campos_alteracao, n_campos_alteracao);
+        
+        // Retorna posição do ponteiro de arquivo para o início do registro
+        fseek(arq_entrada, byte_offset_a_alterar, SEEK_SET);
+        
+        escrever_registro1_em_arquivo(reg, arq_entrada);
+
+        destruir_registro(reg, 1);
+    } else if (tipo_do_arquivo == 2) { // Lista decrescente de registros removidos
+        long long int byte_offset_a_remover = posicao_de_alteracao;
+
+        registro_t *reg = criar_registro();
+        fseek(arq_entrada, byte_offset_a_remover, SEEK_SET);
+        int tam_reg = ler_registro(reg, tipo_do_arquivo, arq_entrada);
+        set_removido(reg, '1'); // Marcar como logicamente removido
+
+        remover_do_indice_por_id(tipo_do_arquivo, indice, get_id(reg)); // Remover do arquivo de índice
+
+        long long int posicao_do_anterior = -1; 
+        long long int posicao_do_atual = topo;
+        int tam_reg_comparado = -1;
+            
+        while (1) {
+            if (posicao_do_atual == -1) break;
+
+            // Posicionar no inicio do campo de tamanho de registro a comparar (-5)
+            fseek(arq_entrada, posicao_do_atual + 1, SEEK_SET);
+
+            // Ler tamanho do registro a ser comparado para decidir
+            fread(&tam_reg_comparado, sizeof(int), 1, arq_entrada);
+            tam_reg_comparado += 5; // Considerando campos iniciais no tamanho do registro
+            
+            if (tam_reg >= tam_reg_comparado) break;
+
+            // Como seguiremos, o atual será o anterior
+            posicao_do_anterior = posicao_do_atual;
+    
+            // Ler o próximo removido para pular
+            fread(&posicao_do_atual, sizeof(long long int), 1, arq_entrada);
+        }
+        
+        if (posicao_do_anterior == -1) { // inserção no início
+            set_proxByteOffset_removido(reg, topo); // Escrever topo como próximo removido
+            set_topo(cabecalho, byte_offset_a_remover); // Atualizar topo no cabeçalho
+        } else {
+            // Posicionar no início do campo de prox removido do registro removido anterior
+            fseek(arq_entrada, posicao_do_anterior + 5, SEEK_SET);
+            
+            // Escrever byte offset do registro que está sendo removido no encadeamento
+            fwrite(&byte_offset_a_remover, sizeof(long long int), 1, arq_entrada);
+
+            // Escrever o último registro comparado (menor ou igual ao sendo removido) como próximo
+            set_proxByteOffset_removido(reg, posicao_do_atual);
+        }
+
+        // Retorna posição do ponteiro de arquivo para o início do registro
+        fseek(arq_entrada, byte_offset_a_remover, SEEK_SET);
+
+        // Escrever registro no arquivo de dados
+        escrever_registro2_em_arquivo(reg, arq_entrada);
+
+        destruir_registro(reg, 1);
+    }
+}
+
+void alterar_sequencialmente(int tipo_do_arquivo, FILE *arq_entrada, cabecalho_t *cabecalho, indice_t *indice, string_t *nome_campos_busca, string_t *valor_campos_busca, int n_campos_busca, string_t *nome_campos_alteracao, string_t *valor_campos_alteracao, int n_campos_alteracao) {
+    int proxRRN = get_proxRRN(cabecalho);
+    long long int proxByteOffset = get_proxByteOffset(cabecalho);
+
+    // Para cada tipo de arquivo
+    if (tipo_do_arquivo == 1) {
+        // Testar se há pelo menos 1 registro
+        if (proxRRN == 0) {
+            fclose(arq_entrada);
+
+            return;
+        }
+
+        // Leitura sequencial dos registros alterando os que batem e não são removidos
+
+        // Posicionando o ponteiro do arquivo logo após o cabeçalho
+        fseek(arq_entrada, TAM_CAB_1, SEEK_SET);
+
+        for (int RRN_atual = 0; RRN_atual < proxRRN; RRN_atual++) {
+            registro_t *reg = criar_registro();
+            ler_registro(reg, tipo_do_arquivo, arq_entrada);
+
+            if (registro_encontrado(reg, nome_campos_busca, valor_campos_busca, n_campos_busca)) {           
+                alterar_do_arquivo_por_posicao(tipo_do_arquivo, arq_entrada, cabecalho, indice, RRN_atual, nome_campos_alteracao, valor_campos_alteracao, n_campos_alteracao);
+            }
+
+            destruir_registro(reg, 1);
+        }
+    } else if (tipo_do_arquivo == 2) {
+        // Testar se há pelo menos 1 registro
+        if (proxByteOffset <= TAM_CAB_2) {
+            printf("Registro inexistente.\n");
+            fclose(arq_entrada);
+
+            return;
+        }
+
+        // Leitura sequencial dos registros imprimindo os não removidos
+
+        // Posicionando o ponteiro do arquivo logo após o cabeçalho
+        fseek(arq_entrada, TAM_CAB_2, SEEK_SET);
+
+        long long int byteOffset_atual = TAM_CAB_2;
+
+        while (byteOffset_atual < proxByteOffset) {
+            registro_t *reg = criar_registro();
+
+            int tam_reg = ler_registro(reg, tipo_do_arquivo, arq_entrada);
+
+            if (registro_encontrado(reg, nome_campos_busca, valor_campos_busca, n_campos_busca)) {
+                remover_do_arquivo_por_posicao(tipo_do_arquivo, arq_entrada, cabecalho, indice, byteOffset_atual);
+            }
+
+            byteOffset_atual += tam_reg;
+
+            destruir_registro(reg, 1);
+        }
+    }
+}
+
+
+
+void funcionalidade8(int tipo_do_arquivo, string_t binario_entrada, string_t arquivo_de_indice, int n_alteracoes) {
+    // Abrir arquivo para leitura e escrita de binário
+    FILE *arq_entrada = fopen(binario_entrada, "r+b");
+    if (!arq_entrada) {
+        printf("Falha no processamento do arquivo.\n");
+        return;
+    }
+
+    // Ler cabecalho e testar consistência
+    cabecalho_t *cabecalho = criar_cabecalho();
+
+    ler_cabecalho_de_arquivo(cabecalho, tipo_do_arquivo, arq_entrada);
+    char status = get_status(cabecalho);
+    
+    // Testar consistência do arquivo
+    if (status == '0') {
+        printf("Falha no processamento do arquivo.\n");
+        destruir_cabecalho(cabecalho);
+        fclose(arq_entrada);
+
+        return;
+    }
+
+    // Arquivo potencialmente inconsistente neste ponto
+    set_status(cabecalho, '0');
+    escrever_cabecalho_em_arquivo(cabecalho, tipo_do_arquivo, arq_entrada);
+
+    // Carregar índice para RAM
+    indice_t *indice = ler_indice(tipo_do_arquivo, arquivo_de_indice);
+
+    if (!indice) {
+        printf("Falha no processamento do arquivo.\n");
+        return;
+    }
+
+
+    for (int alteracoes = 0; alteracoes < n_alteracoes; alteracoes++) {
+        int n_campos_busca = 0;
+        scanf(" %d", &n_campos_busca);
+        
+        string_t *nome_campos_busca = (string_t *)malloc(n_campos_busca * sizeof(string_t));
+        string_t *valor_campos_busca = (string_t *)malloc(n_campos_busca * sizeof(string_t));
+
+        for (int i = 0; i < n_campos_busca; i++) {
+            nome_campos_busca[i] = scan_quote_string();
+            valor_campos_busca[i] = scan_quote_string();
+        }
+
+        int n_campos_alteracao = 0;
+        scanf(" %d", &n_campos_alteracao);
+        
+        string_t *nome_campos_alteracao = (string_t *)malloc(n_campos_alteracao * sizeof(string_t));
+        string_t *valor_campos_alteracao = (string_t *)malloc(n_campos_alteracao * sizeof(string_t));
+
+        for (int i = 0; i < n_campos_alteracao; i++) {
+            nome_campos_alteracao[i] = scan_quote_string();
+            valor_campos_alteracao[i] = scan_quote_string();
+        }
+
+
+        // 
+        if (compare_strings_case_sensitive(nome_campos_busca[0], "id") == 0) { // Alterar buscando pelo índice primário
+            int id_a_remover = atoi(valor_campos_busca[0]);
+
+            long long int posicao_de_alteracao = busca_no_indice(indice, tipo_do_arquivo, id_a_remover, NULL);
+
+            if (posicao_de_alteracao == -1) { // id não existe
+                destroy_string_array(nome_campos_busca, n_campos_busca);
+                destroy_string_array(valor_campos_busca, n_campos_busca);
+                destroy_string_array(nome_campos_alteracao, n_campos_alteracao);
+                destroy_string_array(valor_campos_alteracao, n_campos_alteracao);
+                continue; 
+            }
+
+            // Testar se outros batem com as outras especificações
+            if (n_campos_busca == 1) {
+                alterar_do_arquivo_por_posicao(tipo_do_arquivo, arq_entrada, cabecalho, indice, posicao_de_alteracao, nome_campos_alteracao, valor_campos_alteracao, n_campos_alteracao);                
+            } else {
+                registro_t *reg = get_registro_em_posicao(tipo_do_arquivo, posicao_de_alteracao, arq_entrada);
+
+                if (registro_encontrado(reg, nome_campos_busca, valor_campos_busca, n_campos_busca)) {
+                    alterar_do_arquivo_por_posicao(tipo_do_arquivo, arq_entrada, cabecalho, indice, posicao_de_alteracao, nome_campos_alteracao, valor_campos_alteracao, n_campos_alteracao);                
+                }
+
+                destruir_registro(reg, 1);
+            }
+        } else { // Leitura sequencial do arquivo removendo caso registro bata com as especificações
+            alterar_sequencialmente(tipo_do_arquivo, arq_entrada, cabecalho, indice, nome_campos_busca, valor_campos_busca, n_campos_busca, nome_campos_alteracao, valor_campos_alteracao, n_campos_alteracao);
+        }
+
+        //
+
+        destroy_string_array(nome_campos_busca, n_campos_busca);
+        destroy_string_array(valor_campos_busca, n_campos_busca);
+        destroy_string_array(nome_campos_alteracao, n_campos_alteracao);
+        destroy_string_array(valor_campos_alteracao, n_campos_alteracao);
     }
 
     // Arquivo consistente após todas as alterações realizadas:

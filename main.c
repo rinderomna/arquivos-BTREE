@@ -80,6 +80,14 @@ int main() {
             n = atoi(campos_de_comando[4]);
 
             funcionalidade7(tipo, binario_entrada, arquivo_de_indice, n);
+            break;
+        case 8:
+            binario_entrada = campos_de_comando[2];
+            arquivo_de_indice = campos_de_comando[3];
+            n = atoi(campos_de_comando[4]);
+
+            funcionalidade8(tipo, binario_entrada, arquivo_de_indice, n);
+            break;
         default:
             break;
     }

@@ -23,3 +23,5 @@ void funcionalidade5(int tipo_do_arquivo, string_t arquivo_de_dados, string_t ar
 void funcionalidade6(int tipo_do_arquivo, string_t binario_entrada, string_t arquivo_de_indice, int n);
 
 void funcionalidade7(int tipo_do_arquivo, string_t binario_entrada, string_t arquivo_de_indice, int n);
+
+void funcionalidade8(int tipo_do_arquivo, string_t binario_entrada, string_t arquivo_de_indice, int n_atualizacoes);
