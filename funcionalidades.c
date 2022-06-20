@@ -900,8 +900,11 @@ void inserir_registro(int tipo_do_arquivo, FILE *arq_entrada, cabecalho_t *cabec
         } else { // Worst Fit
             // Buscando o maior registro reutilizável no topo da lista ordenada
             registro_t *maior_registro_reutilizavel = get_registro_em_posicao(tipo_do_arquivo, topo, arq_entrada);
-
-            int tam_maior_reutilizavel = tamanho_total_do_registro(tipo_do_arquivo, maior_registro_reutilizavel);
+            
+            int tam_maior_reutilizavel = 0;
+            fseek(arq_entrada, topo + 1, SEEK_SET);
+            fread(&tam_maior_reutilizavel, sizeof(int), 1, arq_entrada);
+            tam_maior_reutilizavel += 5;
             int tam_reg_a_adicionar = tamanho_total_do_registro(tipo_do_arquivo, registro_a_adicionar);
 
             if (tam_reg_a_adicionar <= tam_maior_reutilizavel) { // Testar se cabe

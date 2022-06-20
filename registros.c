@@ -496,7 +496,7 @@ int tamanho_total_do_registro(int tipo_do_arquivo, registro_t *reg) {
     if (tipo_do_arquivo == 1) {
         return TAM_REG1;
     } else if (tipo_do_arquivo == 2) {
-        int tam_reg = 25; // campos fixos iniciais
+        int tam_reg = 27; // campos fixos iniciais
 
         if (reg->cidade && string_length(reg->cidade) > 0) {
             tam_reg += 5 + string_length(reg->cidade);
