@@ -1065,11 +1065,6 @@ void alterar_registro(registro_t *reg, string_t *nome_campos_alteracao, string_t
 }
 
 void alterar_do_arquivo_por_posicao(int tipo_do_arquivo, FILE *arq_entrada, cabecalho_t *cabecalho, indice_t *indice, long long int posicao_de_alteracao, string_t *nome_campos_alteracao, string_t *valor_campos_alteracao, int n_campos_alteracao) {
-    // Ler do cabecalho nroRegRem e topo do cabecalho 
-
-    long long int topo = get_topo(cabecalho);
-
-    //set_nroRegRem(cabecalho, nroRegRem + 1); // Incrementar no cabecalho número de registros removidos
 
     if (tipo_do_arquivo == 1) { 
         int RRN_a_alterar = (int)posicao_de_alteracao;
@@ -1103,57 +1098,40 @@ void alterar_do_arquivo_por_posicao(int tipo_do_arquivo, FILE *arq_entrada, cabe
         escrever_registro1_em_arquivo(reg, arq_entrada);
         destruir_registro(reg, 1);
     } else if (tipo_do_arquivo == 2) { // Lista decrescente de registros removidos
-        long long int byte_offset_a_remover = posicao_de_alteracao;
+        long long int byte_offset_a_alterar = posicao_de_alteracao;
 
         registro_t *reg = criar_registro();
-        fseek(arq_entrada, byte_offset_a_remover, SEEK_SET);
-        int tam_reg = ler_registro(reg, tipo_do_arquivo, arq_entrada);
-        set_removido(reg, '1'); // Marcar como logicamente removido
-
-        remover_do_indice_por_id(tipo_do_arquivo, indice, get_id(reg)); // Remover do arquivo de índice
-
-        long long int posicao_do_anterior = -1; 
-        long long int posicao_do_atual = topo;
-        int tam_reg_comparado = -1;
-            
-        while (1) {
-            if (posicao_do_atual == -1) break;
-
-            // Posicionar no inicio do campo de tamanho de registro a comparar (-5)
-            fseek(arq_entrada, posicao_do_atual + 1, SEEK_SET);
-
-            // Ler tamanho do registro a ser comparado para decidir
-            fread(&tam_reg_comparado, sizeof(int), 1, arq_entrada);
-            tam_reg_comparado += 5; // Considerando campos iniciais no tamanho do registro
-            
-            if (tam_reg >= tam_reg_comparado) break;
-
-            // Como seguiremos, o atual será o anterior
-            posicao_do_anterior = posicao_do_atual;
-    
-            // Ler o próximo removido para pular
-            fread(&posicao_do_atual, sizeof(long long int), 1, arq_entrada);
-        }
+        fseek(arq_entrada, byte_offset_a_alterar, SEEK_SET);
         
-        if (posicao_do_anterior == -1) { // inserção no início
-            set_proxByteOffset_removido(reg, topo); // Escrever topo como próximo removido
-            set_topo(cabecalho, byte_offset_a_remover); // Atualizar topo no cabeçalho
+        int tam_reg = ler_registro(reg, tipo_do_arquivo, arq_entrada);
+        imprimir_registro(reg);
+
+        alterar_registro(reg, nome_campos_alteracao, valor_campos_alteracao, n_campos_alteracao);
+
+        int novo_tam_reg = tamanho_total_do_registro(tipo_do_arquivo, reg);
+
+        if (novo_tam_reg <= tam_reg) {
+            // Caso for alterar id para novo id, atualizar no indice
+            if (compare_strings_case_sensitive(nome_campos_alteracao[0], "id") == 0) {
+                int id_original = get_id(reg);
+                int novo_id = atoi(valor_campos_alteracao[0]);
+
+                remover_do_indice_por_id(tipo_do_arquivo, indice, id_original);
+
+                registro_de_indice_t *ri = criar_registro_indice();
+                set_id_registro_indice(ri, novo_id);
+                set_byte_offset_registro_indice(ri, byte_offset_a_alterar);
+
+                adicionar_registro_a_indice(indice, ri);
+            }
+
+            fseek(arq_entrada, byte_offset_a_alterar, SEEK_SET);
+            reescrever_registro2_em_arquivo(reg, tam_reg, arq_entrada);
         } else {
-            // Posicionar no início do campo de prox removido do registro removido anterior
-            fseek(arq_entrada, posicao_do_anterior + 5, SEEK_SET);
-            
-            // Escrever byte offset do registro que está sendo removido no encadeamento
-            fwrite(&byte_offset_a_remover, sizeof(long long int), 1, arq_entrada);
-
-            // Escrever o último registro comparado (menor ou igual ao sendo removido) como próximo
-            set_proxByteOffset_removido(reg, posicao_do_atual);
+            printf("\nReinserir\n");
+            remover_do_arquivo_por_posicao(tipo_do_arquivo, arq_entrada, cabecalho, indice, byte_offset_a_alterar);
+            inserir_registro(tipo_do_arquivo, arq_entrada, cabecalho, indice, reg);
         }
-
-        // Retorna posição do ponteiro de arquivo para o início do registro
-        fseek(arq_entrada, byte_offset_a_remover, SEEK_SET);
-
-        // Escrever registro no arquivo de dados
-        escrever_registro2_em_arquivo(reg, arq_entrada);
 
         destruir_registro(reg, 1);
     }
@@ -1181,7 +1159,8 @@ void alterar_sequencialmente(int tipo_do_arquivo, FILE *arq_entrada, cabecalho_t
             registro_t *reg = criar_registro();
             ler_registro(reg, tipo_do_arquivo, arq_entrada);
 
-            if (registro_encontrado(reg, nome_campos_busca, valor_campos_busca, n_campos_busca)) {                 alterar_do_arquivo_por_posicao(tipo_do_arquivo, arq_entrada, cabecalho, indice, RRN_atual, nome_campos_alteracao, valor_campos_alteracao, n_campos_alteracao);
+            if (registro_encontrado(reg, nome_campos_busca, valor_campos_busca, n_campos_busca)) {                 
+                alterar_do_arquivo_por_posicao(tipo_do_arquivo, arq_entrada, cabecalho, indice, RRN_atual, nome_campos_alteracao, valor_campos_alteracao, n_campos_alteracao);
             }
 
             destruir_registro(reg, 1);
@@ -1189,7 +1168,6 @@ void alterar_sequencialmente(int tipo_do_arquivo, FILE *arq_entrada, cabecalho_t
     } else if (tipo_do_arquivo == 2) {
         // Testar se há pelo menos 1 registro
         if (proxByteOffset <= TAM_CAB_2) {
-            printf("Registro inexistente.\n");
             fclose(arq_entrada);
 
             return;
@@ -1208,7 +1186,7 @@ void alterar_sequencialmente(int tipo_do_arquivo, FILE *arq_entrada, cabecalho_t
             int tam_reg = ler_registro(reg, tipo_do_arquivo, arq_entrada);
 
             if (registro_encontrado(reg, nome_campos_busca, valor_campos_busca, n_campos_busca)) {
-                remover_do_arquivo_por_posicao(tipo_do_arquivo, arq_entrada, cabecalho, indice, byteOffset_atual);
+                alterar_do_arquivo_por_posicao(tipo_do_arquivo, arq_entrada, cabecalho, indice, byteOffset_atual, nome_campos_alteracao, valor_campos_alteracao, n_campos_alteracao);
             }
 
             byteOffset_atual += tam_reg;
