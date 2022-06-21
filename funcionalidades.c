@@ -1064,7 +1064,6 @@ void alterar_registro(registro_t *reg, string_t *nome_campos_alteracao, string_t
 
 }
 
-
 void alterar_do_arquivo_por_posicao(int tipo_do_arquivo, FILE *arq_entrada, cabecalho_t *cabecalho, indice_t *indice, long long int posicao_de_alteracao, string_t *nome_campos_alteracao, string_t *valor_campos_alteracao, int n_campos_alteracao) {
     // Ler do cabecalho nroRegRem e topo do cabecalho 
 
@@ -1082,6 +1081,20 @@ void alterar_do_arquivo_por_posicao(int tipo_do_arquivo, FILE *arq_entrada, cabe
 
         fseek(arq_entrada, byte_offset_a_alterar, SEEK_SET);
         ler_registro(reg, tipo_do_arquivo, arq_entrada);
+        
+        // Caso for alterar id para novo id, atualizar no indice
+        if (compare_strings_case_sensitive(nome_campos_alteracao[0], "id") == 0) {
+            int id_original = get_id(reg);
+            int novo_id = atoi(valor_campos_alteracao[0]);
+
+            remover_do_indice_por_id(tipo_do_arquivo, indice, id_original);
+
+            registro_de_indice_t *ri = criar_registro_indice();
+            set_id_registro_indice(ri, novo_id);
+            set_rrn_registro_indice(ri, RRN_a_alterar);
+
+            adicionar_registro_a_indice(indice, ri);
+        }
 
         alterar_registro(reg, nome_campos_alteracao, valor_campos_alteracao, n_campos_alteracao);
         
