@@ -330,3 +330,13 @@ string_t scan_quote_string() {
 
     return str;
 }
+
+string_t clone_string(string_t original_string) {
+    string_t str = create_empty_string();
+
+    for (int i = 0; i < string_length(original_string); i++) {
+        add_symbol_to_string(&str, original_string[i]);
+    }
+
+    return str;
+}

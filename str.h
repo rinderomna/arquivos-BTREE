@@ -26,3 +26,4 @@ void add_symbol_to_string(string_t *str, symbol_t new_symbol);
 string_t *split_string(string_t str, symbol_t separator, int *n_elems);
 void destroy_string_array(string_t *string_array, int n_elems);
 string_t scan_quote_string();
+string_t clone_string(string_t original_string);

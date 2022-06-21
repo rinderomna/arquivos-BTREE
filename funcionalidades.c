@@ -1040,16 +1040,20 @@ void alterar_registro(registro_t *reg, string_t *nome_campos_alteracao, string_t
                         set_qtt(reg, num);
                         break;
                     case 3:
-                        set_sigla(reg, valor_campos_alteracao[alteracao]);
+                        if (get_sigla(reg)) free(get_sigla(reg));
+                        set_sigla(reg, clone_string(valor_campos_alteracao[alteracao]));
                         break;
                     case 4:
-                        set_cidade(reg, valor_campos_alteracao[alteracao]);
+                        if (get_cidade(reg)) free(get_cidade(reg));
+                        set_cidade(reg, clone_string(valor_campos_alteracao[alteracao]));
                         break;
                     case 5:
-                        set_marca(reg, valor_campos_alteracao[alteracao]);
+                        if (get_marca(reg)) free(get_marca(reg));
+                        set_marca(reg, clone_string(valor_campos_alteracao[alteracao]));
                         break;
                     case 6:
-                        set_modelo(reg, valor_campos_alteracao[alteracao]);
+                        if (get_modelo(reg)) free(get_modelo(reg));
+                        set_modelo(reg, clone_string(valor_campos_alteracao[alteracao]));
                         break;
                 }
                 break;
@@ -1068,7 +1072,7 @@ void alterar_do_arquivo_por_posicao(int tipo_do_arquivo, FILE *arq_entrada, cabe
 
     //set_nroRegRem(cabecalho, nroRegRem + 1); // Incrementar no cabecalho número de registros removidos
 
-    if (tipo_do_arquivo == 1) { // pilha de removido
+    if (tipo_do_arquivo == 1) { 
         int RRN_a_alterar = (int)posicao_de_alteracao;
 
         // Calcular Byte Offset para RRN passado
@@ -1082,10 +1086,8 @@ void alterar_do_arquivo_por_posicao(int tipo_do_arquivo, FILE *arq_entrada, cabe
         alterar_registro(reg, nome_campos_alteracao, valor_campos_alteracao, n_campos_alteracao);
         
         // Retorna posição do ponteiro de arquivo para o início do registro
-        fseek(arq_entrada, byte_offset_a_alterar, SEEK_SET);
-        
+        fseek(arq_entrada, byte_offset_a_alterar, SEEK_SET);        
         escrever_registro1_em_arquivo(reg, arq_entrada);
-
         destruir_registro(reg, 1);
     } else if (tipo_do_arquivo == 2) { // Lista decrescente de registros removidos
         long long int byte_offset_a_remover = posicao_de_alteracao;
@@ -1166,8 +1168,7 @@ void alterar_sequencialmente(int tipo_do_arquivo, FILE *arq_entrada, cabecalho_t
             registro_t *reg = criar_registro();
             ler_registro(reg, tipo_do_arquivo, arq_entrada);
 
-            if (registro_encontrado(reg, nome_campos_busca, valor_campos_busca, n_campos_busca)) {           
-                alterar_do_arquivo_por_posicao(tipo_do_arquivo, arq_entrada, cabecalho, indice, RRN_atual, nome_campos_alteracao, valor_campos_alteracao, n_campos_alteracao);
+            if (registro_encontrado(reg, nome_campos_busca, valor_campos_busca, n_campos_busca)) {                 alterar_do_arquivo_por_posicao(tipo_do_arquivo, arq_entrada, cabecalho, indice, RRN_atual, nome_campos_alteracao, valor_campos_alteracao, n_campos_alteracao);
             }
 
             destruir_registro(reg, 1);
@@ -1241,7 +1242,6 @@ void funcionalidade8(int tipo_do_arquivo, string_t binario_entrada, string_t arq
         return;
     }
 
-
     for (int alteracoes = 0; alteracoes < n_alteracoes; alteracoes++) {
         int n_campos_busca = 0;
         scanf(" %d", &n_campos_busca);
@@ -1264,7 +1264,6 @@ void funcionalidade8(int tipo_do_arquivo, string_t binario_entrada, string_t arq
             nome_campos_alteracao[i] = scan_quote_string();
             valor_campos_alteracao[i] = scan_quote_string();
         }
-
 
         // 
         if (compare_strings_case_sensitive(nome_campos_busca[0], "id") == 0) { // Alterar buscando pelo índice primário
