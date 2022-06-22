@@ -1065,7 +1065,6 @@ void alterar_registro(registro_t *reg, string_t *nome_campos_alteracao, string_t
 }
 
 void alterar_do_arquivo_por_posicao(int tipo_do_arquivo, FILE *arq_entrada, cabecalho_t *cabecalho, indice_t *indice, long long int posicao_de_alteracao, string_t *nome_campos_alteracao, string_t *valor_campos_alteracao, int n_campos_alteracao) {
-
     if (tipo_do_arquivo == 1) { 
         int RRN_a_alterar = (int)posicao_de_alteracao;
 
@@ -1104,7 +1103,6 @@ void alterar_do_arquivo_por_posicao(int tipo_do_arquivo, FILE *arq_entrada, cabe
         fseek(arq_entrada, byte_offset_a_alterar, SEEK_SET);
         
         int tam_reg = ler_registro(reg, tipo_do_arquivo, arq_entrada);
-        imprimir_registro(reg);
 
         alterar_registro(reg, nome_campos_alteracao, valor_campos_alteracao, n_campos_alteracao);
 
@@ -1128,7 +1126,6 @@ void alterar_do_arquivo_por_posicao(int tipo_do_arquivo, FILE *arq_entrada, cabe
             fseek(arq_entrada, byte_offset_a_alterar, SEEK_SET);
             reescrever_registro2_em_arquivo(reg, tam_reg, arq_entrada);
         } else {
-            printf("\nReinserir\n");
             remover_do_arquivo_por_posicao(tipo_do_arquivo, arq_entrada, cabecalho, indice, byte_offset_a_alterar);
             inserir_registro(tipo_do_arquivo, arq_entrada, cabecalho, indice, reg);
         }
@@ -1157,10 +1154,12 @@ void alterar_sequencialmente(int tipo_do_arquivo, FILE *arq_entrada, cabecalho_t
 
         for (int RRN_atual = 0; RRN_atual < proxRRN; RRN_atual++) {
             registro_t *reg = criar_registro();
+
             ler_registro(reg, tipo_do_arquivo, arq_entrada);
 
             if (registro_encontrado(reg, nome_campos_busca, valor_campos_busca, n_campos_busca)) {                 
                 alterar_do_arquivo_por_posicao(tipo_do_arquivo, arq_entrada, cabecalho, indice, RRN_atual, nome_campos_alteracao, valor_campos_alteracao, n_campos_alteracao);
+                fseek(arq_entrada, TAM_CAB_1 + (RRN_atual + 1) * TAM_REG1, SEEK_SET); // Reposicionando ponteiro para próxima leitura
             }
 
             destruir_registro(reg, 1);
@@ -1187,6 +1186,7 @@ void alterar_sequencialmente(int tipo_do_arquivo, FILE *arq_entrada, cabecalho_t
 
             if (registro_encontrado(reg, nome_campos_busca, valor_campos_busca, n_campos_busca)) {
                 alterar_do_arquivo_por_posicao(tipo_do_arquivo, arq_entrada, cabecalho, indice, byteOffset_atual, nome_campos_alteracao, valor_campos_alteracao, n_campos_alteracao);
+                fseek(arq_entrada, byteOffset_atual + tam_reg, SEEK_SET); // Reposicionando ponteiro para próxima leitura
             }
 
             byteOffset_atual += tam_reg;
@@ -1195,8 +1195,6 @@ void alterar_sequencialmente(int tipo_do_arquivo, FILE *arq_entrada, cabecalho_t
         }
     }
 }
-
-
 
 void funcionalidade8(int tipo_do_arquivo, string_t binario_entrada, string_t arquivo_de_indice, int n_alteracoes) {
     // Abrir arquivo para leitura e escrita de binário

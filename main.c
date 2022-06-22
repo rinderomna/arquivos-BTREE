@@ -1,6 +1,5 @@
 /* |Trabalho 2 de Arquivos - 2022/01|
  * Hélio Nogueira Cardoso         - N°USP: 10310227
- * Raphael David Philippe Leveque - N°USP: 12542522
  */
 
 #include <stdio.h>
