@@ -17,7 +17,8 @@ void escrever_registro1_em_arquivo(registro_t *reg1, FILE *fp);
 // Escreve registro tipo 2 em arquivo já aberto para escrita
 int escrever_registro2_em_arquivo(registro_t *reg2, FILE *fp);
 
-// Escrever registro tipo 2 em cima de registro já existente
+// Escrever registro tipo 2 em cima de registro já existente,
+// mantendo indicador de tamanho anterior e completando com lixo ('$')
 void reescrever_registro2_em_arquivo(registro_t *reg2, int tam_registro_anterior, FILE *fp);
 
 // Lê registro de tamanho fixo armazenado, retornando tamanho total do registro lido

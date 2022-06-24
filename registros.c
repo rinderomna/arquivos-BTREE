@@ -255,6 +255,8 @@ int escrever_registro2_em_arquivo(registro_t *reg2, FILE *fp) {
     return tamanho_registro_atual + 5; 
 }
 
+// Escrever registro tipo 2 em cima de registro já existente,
+// mantendo indicador de tamanho anterior e completando com lixo ('$')
 void reescrever_registro2_em_arquivo(registro_t *reg2, int tam_registro_anterior, FILE *fp) {
     int tamanho_registro_atual = tamanho_total_do_registro(2, reg2);
 

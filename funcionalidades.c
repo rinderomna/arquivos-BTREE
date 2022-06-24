@@ -206,10 +206,11 @@ void funcionalidade2(int tipo_do_arquivo, string_t binario_entrada) {
     fclose(arq_entrada);
 }
 
+// Testa se um registro bate com as especificações em nome_campos e valor_campos, retornando um inteiro booleano
 int registro_encontrado(registro_t *reg, string_t *nome_campos, string_t *valor_campos, int n) {
     string_t campos_validos[] = {"id", "ano", "qtt", "sigla", "cidade", "marca", "modelo"};
 
-    if (get_removido(reg) == '1') return 0;
+    if (get_removido(reg) == '1') return 0; // Se reigistro está logicamente removido, então não foi encontrado
 
     // 'encontrado' irá contar quantas das n condições foram atendidas pelo registro atual.
     short encontrado = 0;
@@ -252,13 +253,16 @@ int registro_encontrado(registro_t *reg, string_t *nome_campos, string_t *valor_
         }
     }
 
+    // Se o todas as n especificações foram atendidas, então o registro foi encontrado
     if (encontrado == n) {
         return 1;
     }
-
+    
+    // Caso contrário, não foi encontrado
     return 0;
 }
 
+// Lê sequencialmente um arquivo de dados tipo1 e imprime os registros não removidos que batem com as especificações
 void busca_parametrizada1(FILE *arq_entrada, string_t *nome_campos, string_t *valor_campos, int n) {
     // Ler do cabeçalho status e proxByteOffset
     cabecalho_t *cabecalho = criar_cabecalho();
@@ -307,6 +311,7 @@ void busca_parametrizada1(FILE *arq_entrada, string_t *nome_campos, string_t *va
     }
 }
 
+// Lê sequencialmente um arquivo de dados tipo2 e imprime os registros não removidos que batem com as especificações
 void busca_parametrizada2(FILE *arq_entrada, string_t *nome_campos, string_t *valor_campos, int n) {
     // Ler do cabeçalho status e proxByteOffset
     cabecalho_t *cabecalho = criar_cabecalho();
@@ -359,6 +364,8 @@ void busca_parametrizada2(FILE *arq_entrada, string_t *nome_campos, string_t *va
     }
 }
 
+// Imprime todos os registro não removidos de um arquivo binário de tipo passado, desde que o registro 
+// satisfaça 'n' condições para valores campo, condições estas lidas nas próximas n linhas da entrada padrão
 void funcionalidade3(int tipo_de_arquivo, string_t binario_entrada, int n) {
     FILE *arq_entrada = fopen(binario_entrada, "rb");
     if (!arq_entrada) {
@@ -393,6 +400,7 @@ void funcionalidade3(int tipo_de_arquivo, string_t binario_entrada, int n) {
     destroy_string_array(valor_campos, n);
 }
 
+// Imprime o registro de RRN passado de um arquivo binário, desde que ele exista e não esteja removido
 void funcionalidade4(int tipo_de_arquivo, string_t binario_entrada, int RRN) {
     // Funcionalidade apenas para tipo 1 de arquivo (Registros de Tamanho Fixo)
     if (tipo_de_arquivo != 1) {
@@ -462,6 +470,10 @@ void funcionalidade4(int tipo_de_arquivo, string_t binario_entrada, int RRN) {
     fclose(arq_entrada);
 }
 
+// Cria um arquivo de índice primário a partir de um arquivo de dados existente de tipo indicado
+// A chave primária é o campo id do registros de dados
+// Para o tipo1, guarda-se para cada chave primária o RRN do registro no arquivo de dados
+// Para o tipo2, guarda-se para cada chave primária o Byteoffset do registro no arquivo de dados
 void funcionalidade5(int tipo_do_arquivo, string_t arquivo_de_dados, string_t arquivo_de_indice) {
     FILE *arq_entrada = NULL;
 
@@ -473,24 +485,11 @@ void funcionalidade5(int tipo_do_arquivo, string_t arquivo_de_dados, string_t ar
         return;
     }
     
-    char status = ler_status_do_indice(arq_entrada);
-
-    if (status == '0') {
-        printf("Falha no processamento do arquivo.\n");
-
-        return;
-    }
-
-    // Criando índice
-    indice_t *indice = criar_indice();
-
-    // Ler sequencialmente o arquivo de dados salvando as informações no índice em RAM:
-    
     // Ler do cabecalho status, proxRRN e proxByteOffset
     cabecalho_t *cabecalho = criar_cabecalho();
 
     ler_cabecalho_de_arquivo(cabecalho, tipo_do_arquivo, arq_entrada);
-    status = get_status(cabecalho);
+    char status = get_status(cabecalho);
     int proxRRN = get_proxRRN(cabecalho);
     long long int proxByteOffset = get_proxByteOffset(cabecalho);
 
@@ -504,16 +503,15 @@ void funcionalidade5(int tipo_do_arquivo, string_t arquivo_de_dados, string_t ar
         return;
     }
 
-    // Para cada tipo de arquivo
+    //---------------------------------------------------------------------------------
+
+    // Criando índice em RAM
+    indice_t *indice = criar_indice();
+
+    // Ler sequencialmente o arquivo de dados salvando as informações no índice em RAM:
+
     if (tipo_do_arquivo == 1) {
-        // Testar se há pelo menos 1 registro
-        if (proxRRN == 0) {
-            fclose(arq_entrada);
-
-            return;
-        }
-
-        // Leitura sequencial dos registros imprimindo os não removidos
+        // Leitura sequencial dos registros adicionando no índice as informações dos não removidos:
         for (int rrn = 0; rrn < proxRRN; rrn++) {
             registro_t *reg = criar_registro();
 
@@ -530,16 +528,8 @@ void funcionalidade5(int tipo_do_arquivo, string_t arquivo_de_dados, string_t ar
 
             destruir_registro(reg, 1);
         }
-
     } else if (tipo_do_arquivo == 2) {
-        // Testar se há pelo menos 1 registro
-        if (proxByteOffset <= TAM_CAB_2) {
-            fclose(arq_entrada);
-
-            return;
-        }
-
-        // Leitura sequencial dos registros imprimindo os não removidos
+        // Leitura sequencial dos registros adicionando no índice as informações dos não removidos:
         long long int byteOffset_atual = TAM_CAB_2;
         while (byteOffset_atual < proxByteOffset) {
             registro_t *reg = criar_registro();
@@ -560,16 +550,16 @@ void funcionalidade5(int tipo_do_arquivo, string_t arquivo_de_dados, string_t ar
         }
     }    
 
+    // Escrever o arquivo de índice atualizado
     escrever_indice(indice, tipo_do_arquivo, arquivo_de_indice);
-
     destruir_indice(indice);
-
     fclose(arq_entrada);
 
+    // Imprimir "identificação" do arquivo de índice
     binarioNaTela(arquivo_de_indice);
 }
 
-// Remove registro do arquivo de dados e do índice correspondente
+// Remove registro do arquivo de dados e do índice em RAM correspondente
 // Enviar cabecalho correspondente
 // O status no arquivo de dados deve ser antes setado para '0'
 // Apenas enviar posição de remoção que já foi checada ser válida e registro não esteja removido
@@ -581,7 +571,7 @@ void remover_do_arquivo_por_posicao(int tipo_do_arquivo, FILE *arq_entrada, cabe
 
     set_nroRegRem(cabecalho, nroRegRem + 1); // Incrementar no cabecalho número de registros removidos
 
-    if (tipo_do_arquivo == 1) { // pilha de removido
+    if (tipo_do_arquivo == 1) { // pilha de removidos
         int RRN_a_remover = (int)posicao_de_remocao;
 
         // Calcular Byte Offset para RRN passado
@@ -589,6 +579,7 @@ void remover_do_arquivo_por_posicao(int tipo_do_arquivo, FILE *arq_entrada, cabe
 
         registro_t *reg = criar_registro();
 
+        // Ler registro a ser removido em sua posição
         fseek(arq_entrada, byte_offset_a_remover, SEEK_SET);
         ler_registro(reg, tipo_do_arquivo, arq_entrada);
         set_removido(reg, '1'); // Marcar como logicamente removido
@@ -600,6 +591,7 @@ void remover_do_arquivo_por_posicao(int tipo_do_arquivo, FILE *arq_entrada, cabe
         // Retorna posição do ponteiro de arquivo para o início do registro
         fseek(arq_entrada, byte_offset_a_remover, SEEK_SET);
         
+        // Escrever registro (agora logicamente removido) de volta no arquivo
         escrever_registro1_em_arquivo(reg, arq_entrada);
 
         destruir_registro(reg, 1);
@@ -613,12 +605,14 @@ void remover_do_arquivo_por_posicao(int tipo_do_arquivo, FILE *arq_entrada, cabe
 
         remover_do_indice_por_id(tipo_do_arquivo, indice, get_id(reg)); // Remover do arquivo de índice
 
+        // Encontrando posição em que o registro será introduzido na lista ordenada de removidos:
         long long int posicao_do_anterior = -1; 
         long long int posicao_do_atual = topo;
         int tam_reg_comparado = -1;
-            
+        
         while (1) {
-            if (posicao_do_atual == -1) break;
+            // Parar a busca se a posição do próximo é "nula" (-1)
+            if (posicao_do_atual == -1) break; 
 
             // Posicionar no inicio do campo de tamanho de registro a comparar (-5)
             fseek(arq_entrada, posicao_do_atual + 1, SEEK_SET);
@@ -627,7 +621,8 @@ void remover_do_arquivo_por_posicao(int tipo_do_arquivo, FILE *arq_entrada, cabe
             fread(&tam_reg_comparado, sizeof(int), 1, arq_entrada);
             tam_reg_comparado += 5; // Considerando campos iniciais no tamanho do registro
             
-            if (tam_reg >= tam_reg_comparado) break;
+            // Parar também se o próximo do encadeamento tem tamanho menor ou igual ao registro que está sendo removido
+            if (tam_reg >= tam_reg_comparado) break; 
 
             // Como seguiremos, o atual será o anterior
             posicao_do_anterior = posicao_do_atual;
@@ -636,17 +631,17 @@ void remover_do_arquivo_por_posicao(int tipo_do_arquivo, FILE *arq_entrada, cabe
             fread(&posicao_do_atual, sizeof(long long int), 1, arq_entrada);
         }
         
-        if (posicao_do_anterior == -1) { // inserção no início
-            set_proxByteOffset_removido(reg, topo); // Escrever topo como próximo removido
-            set_topo(cabecalho, byte_offset_a_remover); // Atualizar topo no cabeçalho
+        if (posicao_do_anterior == -1) { // inserção no início (Não há anterior no encadeamento)
+            set_proxByteOffset_removido(reg, topo); // Encadear topo anterior como próximo removido
+            set_topo(cabecalho, byte_offset_a_remover); // Atualizar topo com a posição do registro sendo removido
         } else {
             // Posicionar no início do campo de prox removido do registro removido anterior
             fseek(arq_entrada, posicao_do_anterior + 5, SEEK_SET);
             
-            // Escrever byte offset do registro que está sendo removido no encadeamento
+            // Encadear registro sendo removido como próximo do anterior
             fwrite(&byte_offset_a_remover, sizeof(long long int), 1, arq_entrada);
 
-            // Escrever o último registro comparado (menor ou igual ao sendo removido) como próximo
+            // Encadear registro comparado (menor ou igual ao sendo removido) como próximo do removido
             set_proxByteOffset_removido(reg, posicao_do_atual);
         }
 
@@ -660,6 +655,9 @@ void remover_do_arquivo_por_posicao(int tipo_do_arquivo, FILE *arq_entrada, cabe
     }
 }
 
+// Remove do arquivo de dados e índice em RAM correspondente todos os registros que batem com as especificações em nome_campos e valor_campos
+// nome_campos contém os nomes dos campos cujos valores de especificação encontram-se em cada respectiva posição de valor_campos
+// A busca por tais registros é feita de forma sequencial no arquivo de dados
 void remover_sequencialmente(int tipo_do_arquivo, FILE *arq_entrada, cabecalho_t *cabecalho, indice_t *indice, string_t *nome_campos, string_t *valor_campos, int n_campos) {
     int proxRRN = get_proxRRN(cabecalho);
     long long int proxByteOffset = get_proxByteOffset(cabecalho);
@@ -691,7 +689,6 @@ void remover_sequencialmente(int tipo_do_arquivo, FILE *arq_entrada, cabecalho_t
     } else if (tipo_do_arquivo == 2) {
         // Testar se há pelo menos 1 registro
         if (proxByteOffset <= TAM_CAB_2) {
-            printf("Registro inexistente.\n");
             fclose(arq_entrada);
 
             return;
@@ -720,6 +717,7 @@ void remover_sequencialmente(int tipo_do_arquivo, FILE *arq_entrada, cabecalho_t
     }
 }
 
+// Remove do arquivo de dados e de índice correspondente 'n' registros especificados na entrada padrão
 void funcionalidade6(int tipo_do_arquivo, string_t binario_entrada, string_t arquivo_de_indice, int n) {
     // Abrir arquivo para leitura e escrita de binário
     FILE *arq_entrada = fopen(binario_entrada, "r+b");
@@ -730,7 +728,6 @@ void funcionalidade6(int tipo_do_arquivo, string_t binario_entrada, string_t arq
 
     // Ler cabecalho e testar consistência
     cabecalho_t *cabecalho = criar_cabecalho();
-
     ler_cabecalho_de_arquivo(cabecalho, tipo_do_arquivo, arq_entrada);
     char status = get_status(cabecalho);
     
@@ -743,7 +740,7 @@ void funcionalidade6(int tipo_do_arquivo, string_t binario_entrada, string_t arq
         return;
     }
 
-    // Arquivo potencialmente inconsistente neste ponto
+    // Arquivo potencialmente inconsistente neste ponto, escrever status '0'
     set_status(cabecalho, '0');
     escrever_cabecalho_em_arquivo(cabecalho, tipo_do_arquivo, arq_entrada);
 
@@ -751,10 +748,12 @@ void funcionalidade6(int tipo_do_arquivo, string_t binario_entrada, string_t arq
     indice_t *indice = ler_indice(tipo_do_arquivo, arquivo_de_indice);
 
     if (!indice) {
+        destruir_cabecalho(cabecalho);
         printf("Falha no processamento do arquivo.\n");
         return;
     }
 
+    // Laço que realiza cada uma das n remoções, lendo especificações de busca da entrada padrão
     for (int remocao = 0; remocao < n; remocao++) {
         // Ler quantos campos serão utilizados para especificar a remoção
         int n_campos = 0;
@@ -783,10 +782,9 @@ void funcionalidade6(int tipo_do_arquivo, string_t binario_entrada, string_t arq
                 continue; 
             }
 
-            // Testar se outros batem com as outras especificações
-            if (n_campos == 1) {
+            if (n_campos == 1) { // Se o campo for apenas id, remover na posição lida do índice
                 remover_do_arquivo_por_posicao(tipo_do_arquivo, arq_entrada, cabecalho, indice, posicao_de_remocao);                
-            } else {
+            } else { // Se houverem mais campos de especificações, testá-los no registro buscado antes de remover
                 registro_t *reg = get_registro_em_posicao(tipo_do_arquivo, posicao_de_remocao, arq_entrada);
 
                 if (registro_encontrado(reg, nome_campos, valor_campos, n_campos)) {
@@ -819,6 +817,8 @@ void funcionalidade6(int tipo_do_arquivo, string_t binario_entrada, string_t arq
     binarioNaTela(arquivo_de_indice);
 }
 
+// Preenche as informações de um registro com as informações no vetor de strings campos, de 7 posições,
+// 1 para cada campo respectivo: id, ano de fabricação, quantidade, sigla, cidade, marca, modelo
 void preencher_registro(registro_t *reg, string_t *campos) {
     // id (campo obrigatório)
     set_id(reg, atoi(campos[0]));
@@ -843,6 +843,9 @@ void preencher_registro(registro_t *reg, string_t *campos) {
     set_modelo(reg, campos[6]);
 }
 
+// Insere registro em arquivo de dados e índice em RAM correspondente, seguindo a devida lógica de reaproveitamento de espaço:
+// Tipo 1 -> Desempilha o último removido para reaproveitar, ou insere no final se não houver removidos
+// Tipo 2 -> Aplica Worst Fit para reaproveitar espaço, ou insere no final se não houver removidos ou se não couber em nenhum deles
 void inserir_registro(int tipo_do_arquivo, FILE *arq_entrada, cabecalho_t *cabecalho, indice_t *indice, registro_t *registro_a_adicionar) {
     // Criar registro de índice que será adicionado ao índice
     registro_de_indice_t *ri = criar_registro_indice();
@@ -850,8 +853,7 @@ void inserir_registro(int tipo_do_arquivo, FILE *arq_entrada, cabecalho_t *cabec
     // Setando o id deste registro de índice
     set_id_registro_indice(ri, get_id(registro_a_adicionar));
 
-    // Ler topo do cabecalho 
-
+    // Ler topo do cabecalho
     long long int topo = get_topo(cabecalho);
 
     if (tipo_do_arquivo == 1) { // desempilhar ou final
@@ -897,17 +899,21 @@ void inserir_registro(int tipo_do_arquivo, FILE *arq_entrada, cabecalho_t *cabec
             // Alterar proxRRN no cabecalho
             set_proxByteOffset(cabecalho, proxByteOffset + tam_reg);
         } else { // Worst Fit
-            // Buscando o maior registro reutilizável no topo da lista ordenada
+            // Buscar o maior registro reutilizável no topo da lista ordenada
             registro_t *maior_registro_reutilizavel = get_registro_em_posicao(tipo_do_arquivo, topo, arq_entrada);
             
+            // Ler o tamanho deste maior reutilizável 
             int tam_maior_reutilizavel = 0;
             fseek(arq_entrada, topo + 1, SEEK_SET);
             fread(&tam_maior_reutilizavel, sizeof(int), 1, arq_entrada);
-            tam_maior_reutilizavel += 5;
+            tam_maior_reutilizavel += 5; // Incrementar 5 para contar os bytes iniciais
+
+            // Computar tamanho que o registro que será adicionado irá precisar
             int tam_reg_a_adicionar = tamanho_total_do_registro(tipo_do_arquivo, registro_a_adicionar);
 
-            if (tam_reg_a_adicionar <= tam_maior_reutilizavel) { // Testar se cabe
-                // Posiciona ponteiro do arquivo onde irá reutilizar
+            // Testar se o registro a ser adicionado cabe no maior espaço reutilizável
+            if (tam_reg_a_adicionar <= tam_maior_reutilizavel) { // Caso caiba, reaproveitar
+                // Posicionar ponteiro do arquivo onde irá reutilizar
                 fseek(arq_entrada, topo, SEEK_SET);
 
                 // Escrever em cima o registro sendo utilizado
@@ -922,8 +928,8 @@ void inserir_registro(int tipo_do_arquivo, FILE *arq_entrada, cabecalho_t *cabec
                 // Diminuir número de registros removidos
                 int nroRegRem = get_nroRegRem(cabecalho);
                 set_nroRegRem(cabecalho, nroRegRem - 1);
-            } else { // Não cabe -> Insere no final
-                // Inserir no final do arquivo
+            } else { // Não cabe -> Inserir no final
+                // Posicionar ponteiro no final do arquivo e escrever registro
                 fseek(arq_entrada, 0, SEEK_END);
                 int tam_reg = escrever_registro2_em_arquivo(registro_a_adicionar, arq_entrada);
 
@@ -939,9 +945,11 @@ void inserir_registro(int tipo_do_arquivo, FILE *arq_entrada, cabecalho_t *cabec
         }
     }
 
+    // Adicionar novo registro a índice em RAM
     adicionar_registro_a_indice(indice, ri);
 }
 
+// Insere no arquivo de dados e de índice correspondente 'n' novos registro lidos entrada padrão
 void funcionalidade7(int tipo_do_arquivo, string_t binario_entrada, string_t arquivo_de_indice, int n_insercoes) {
     // Abrir arquivo para leitura e escrita de binário
     FILE *arq_entrada = fopen(binario_entrada, "r+b");
@@ -973,21 +981,23 @@ void funcionalidade7(int tipo_do_arquivo, string_t binario_entrada, string_t arq
     indice_t *indice = ler_indice(tipo_do_arquivo, arquivo_de_indice);
 
     if (!indice) {
+        destruir_cabecalho(cabecalho);
         printf("Falha no processamento do arquivo.\n");
         return;
     }
 
+    // Laço que realiza cada uma das inserções especificadas na entrada padrão
     for (int insercao = 0; insercao < n_insercoes; insercao++) {
+        // Ler campos de novo registro da entrada padrão
         string_t *campos = (string_t *)malloc(7 * sizeof(string_t));
 
         for (int i = 0; i < 7; i++) {
             campos[i] = scan_quote_string();
         }
 
+        // Cria preenche e insere registro no arquivo de dados e índice em RAM
         registro_t *registro_a_adicionar = criar_registro();
-
         preencher_registro(registro_a_adicionar, campos);
-
         inserir_registro(tipo_do_arquivo, arq_entrada, cabecalho, indice, registro_a_adicionar);
 
         destroy_string_array(campos, 7);
@@ -1010,13 +1020,12 @@ void funcionalidade7(int tipo_do_arquivo, string_t binario_entrada, string_t arq
     binarioNaTela(arquivo_de_indice);
 }
 
+// Altera as informações de um registro para valores especificados em nome_campos_alteracao e valor_campos_alteração
 void alterar_registro(registro_t *reg, string_t *nome_campos_alteracao, string_t *valor_campos_alteracao, int n_campos_alteracao) {
     string_t campos_validos[] = {"id", "ano", "qtt", "sigla", "cidade", "marca", "modelo"};
 
-    if (get_removido(reg) == '1') return;
-
     for (int alteracao = 0; alteracao < n_campos_alteracao; alteracao++) {
-        // Testar cada um dos campos válidos para saber se é um campo da condição atual
+        // Testar cada um dos campos válidos para saber se é um campo da especificação de alteração
         for (int k = 0; k < 7; k++) {
             int num = 0;
             if (compare_strings_case_sensitive(nome_campos_alteracao[alteracao], campos_validos[k]) == 0) {
@@ -1064,6 +1073,10 @@ void alterar_registro(registro_t *reg, string_t *nome_campos_alteracao, string_t
 
 }
 
+// Alterar registro do arquivo de dados e do índice em RAM correspondente
+// Enviar cabecalho correspondente
+// O status no arquivo de dados deve ser antes setado para '0'
+// Apenas enviar posição de alteração que já foi checada ser válida e registro não esteja removido
 void alterar_do_arquivo_por_posicao(int tipo_do_arquivo, FILE *arq_entrada, cabecalho_t *cabecalho, indice_t *indice, long long int posicao_de_alteracao, string_t *nome_campos_alteracao, string_t *valor_campos_alteracao, int n_campos_alteracao) {
     if (tipo_do_arquivo == 1) { 
         int RRN_a_alterar = (int)posicao_de_alteracao;
@@ -1134,21 +1147,15 @@ void alterar_do_arquivo_por_posicao(int tipo_do_arquivo, FILE *arq_entrada, cabe
     }
 }
 
+// Altera do arquivo de dados e e índice  em RAM correspondente todos os registros que batem com as especificações em nome_campos_busca e valor_campos_busca,
+// para novas especificações em nome_campos_alteracao e valores_campos_alteracao.
+// A busca por tais registros é feita de forma sequencial no arquivo de dados
 void alterar_sequencialmente(int tipo_do_arquivo, FILE *arq_entrada, cabecalho_t *cabecalho, indice_t *indice, string_t *nome_campos_busca, string_t *valor_campos_busca, int n_campos_busca, string_t *nome_campos_alteracao, string_t *valor_campos_alteracao, int n_campos_alteracao) {
     int proxRRN = get_proxRRN(cabecalho);
     long long int proxByteOffset = get_proxByteOffset(cabecalho);
 
-    // Para cada tipo de arquivo
+    // Para cada tipo de arquivo, leitura sequencial do arquivo, alterando os que baterem com as especificações
     if (tipo_do_arquivo == 1) {
-        // Testar se há pelo menos 1 registro
-        if (proxRRN == 0) {
-            fclose(arq_entrada);
-
-            return;
-        }
-
-        // Leitura sequencial dos registros alterando os que batem e não são removidos
-
         // Posicionando o ponteiro do arquivo logo após o cabeçalho
         fseek(arq_entrada, TAM_CAB_1, SEEK_SET);
 
@@ -1165,15 +1172,6 @@ void alterar_sequencialmente(int tipo_do_arquivo, FILE *arq_entrada, cabecalho_t
             destruir_registro(reg, 1);
         }
     } else if (tipo_do_arquivo == 2) {
-        // Testar se há pelo menos 1 registro
-        if (proxByteOffset <= TAM_CAB_2) {
-            fclose(arq_entrada);
-
-            return;
-        }
-
-        // Leitura sequencial dos registros imprimindo os não removidos
-
         // Posicionando o ponteiro do arquivo logo após o cabeçalho
         fseek(arq_entrada, TAM_CAB_2, SEEK_SET);
 
@@ -1196,6 +1194,7 @@ void alterar_sequencialmente(int tipo_do_arquivo, FILE *arq_entrada, cabecalho_t
     }
 }
 
+// Altera no arquivo de dados e de índice correspondente 'n_alteracoes' registro lidos especificados na entrada padrão.
 void funcionalidade8(int tipo_do_arquivo, string_t binario_entrada, string_t arquivo_de_indice, int n_alteracoes) {
     // Abrir arquivo para leitura e escrita de binário
     FILE *arq_entrada = fopen(binario_entrada, "r+b");
@@ -1227,14 +1226,18 @@ void funcionalidade8(int tipo_do_arquivo, string_t binario_entrada, string_t arq
     indice_t *indice = ler_indice(tipo_do_arquivo, arquivo_de_indice);
 
     if (!indice) {
+        destruir_cabecalho(cabecalho);
         printf("Falha no processamento do arquivo.\n");
         return;
     }
 
+    // Laço que realiza cada uma das alterações especificadas na entrada padrão
     for (int alteracoes = 0; alteracoes < n_alteracoes; alteracoes++) {
+        // Ler quantos campos de busca serão usados nessa alteração
         int n_campos_busca = 0;
         scanf(" %d", &n_campos_busca);
         
+        // Ler as informações de busca
         string_t *nome_campos_busca = (string_t *)malloc(n_campos_busca * sizeof(string_t));
         string_t *valor_campos_busca = (string_t *)malloc(n_campos_busca * sizeof(string_t));
 
@@ -1243,9 +1246,11 @@ void funcionalidade8(int tipo_do_arquivo, string_t binario_entrada, string_t arq
             valor_campos_busca[i] = scan_quote_string();
         }
 
+        // Ler quantos campos de alteração serão usados
         int n_campos_alteracao = 0;
         scanf(" %d", &n_campos_alteracao);
         
+        // Ler informações de alteração
         string_t *nome_campos_alteracao = (string_t *)malloc(n_campos_alteracao * sizeof(string_t));
         string_t *valor_campos_alteracao = (string_t *)malloc(n_campos_alteracao * sizeof(string_t));
 
@@ -1254,7 +1259,6 @@ void funcionalidade8(int tipo_do_arquivo, string_t binario_entrada, string_t arq
             valor_campos_alteracao[i] = scan_quote_string();
         }
 
-        // 
         if (compare_strings_case_sensitive(nome_campos_busca[0], "id") == 0) { // Alterar buscando pelo índice primário
             int id_a_remover = atoi(valor_campos_busca[0]);
 
@@ -1268,10 +1272,9 @@ void funcionalidade8(int tipo_do_arquivo, string_t binario_entrada, string_t arq
                 continue; 
             }
 
-            // Testar se outros batem com as outras especificações
-            if (n_campos_busca == 1) {
+            if (n_campos_busca == 1) { // Se o campo for apenas id, alterar na posição lida do índice
                 alterar_do_arquivo_por_posicao(tipo_do_arquivo, arq_entrada, cabecalho, indice, posicao_de_alteracao, nome_campos_alteracao, valor_campos_alteracao, n_campos_alteracao);                
-            } else {
+            } else { // Se houverem mais campos de especificações, testá-los no registro buscado antes de alterar
                 registro_t *reg = get_registro_em_posicao(tipo_do_arquivo, posicao_de_alteracao, arq_entrada);
 
                 if (registro_encontrado(reg, nome_campos_busca, valor_campos_busca, n_campos_busca)) {
@@ -1280,11 +1283,9 @@ void funcionalidade8(int tipo_do_arquivo, string_t binario_entrada, string_t arq
 
                 destruir_registro(reg, 1);
             }
-        } else { // Leitura sequencial do arquivo removendo caso registro bata com as especificações
+        } else { // Leitura sequencial do arquivo alterando caso registro bata com as especificações
             alterar_sequencialmente(tipo_do_arquivo, arq_entrada, cabecalho, indice, nome_campos_busca, valor_campos_busca, n_campos_busca, nome_campos_alteracao, valor_campos_alteracao, n_campos_alteracao);
         }
-
-        //
 
         destroy_string_array(nome_campos_busca, n_campos_busca);
         destroy_string_array(valor_campos_busca, n_campos_busca);
