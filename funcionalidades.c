@@ -717,6 +717,18 @@ void remover_sequencialmente(int tipo_do_arquivo, FILE *arq_entrada, cabecalho_t
     }
 }
 
+
+// Retorna o índice em que o campo id está no vetor de campos ou -1 caso não haja este campo
+int tem_id_onde(string_t *campos, int n_campos) {
+    for (int i = 0; i < n_campos; i++) {
+        if (compare_strings_case_sensitive(campos[i], "id") == 0) {
+            return i;
+        }
+    }
+
+    return -1;
+} 
+
 // Remove do arquivo de dados e de índice correspondente 'n' registros especificados na entrada padrão
 void funcionalidade6(int tipo_do_arquivo, string_t binario_entrada, string_t arquivo_de_indice, int n) {
     // Abrir arquivo para leitura e escrita de binário
@@ -771,8 +783,10 @@ void funcionalidade6(int tipo_do_arquivo, string_t binario_entrada, string_t arq
             valor_campos[i] = scan_quote_string();
         }
 
-        if (compare_strings_case_sensitive(nome_campos[0], "id") == 0) { // Remover buscando pelo índice primário
-            int id_a_remover = atoi(valor_campos[0]);
+        int id_pos = tem_id_onde(nome_campos, n_campos);
+
+        if (id_pos != -1) { // Remover buscando pelo índice primário
+            int id_a_remover = atoi(valor_campos[id_pos]);
 
             long long int posicao_de_remocao = busca_no_indice(indice, tipo_do_arquivo, id_a_remover, NULL);
 
@@ -1090,9 +1104,11 @@ void alterar_do_arquivo_por_posicao(int tipo_do_arquivo, FILE *arq_entrada, cabe
         ler_registro(reg, tipo_do_arquivo, arq_entrada);
         
         // Caso for alterar id para novo id, atualizar no indice
-        if (compare_strings_case_sensitive(nome_campos_alteracao[0], "id") == 0) {
+        int id_pos = tem_id_onde(nome_campos_alteracao, n_campos_alteracao);
+
+        if (id_pos != -1) {
             int id_original = get_id(reg);
-            int novo_id = atoi(valor_campos_alteracao[0]);
+            int novo_id = atoi(valor_campos_alteracao[id_pos]);
 
             remover_do_indice_por_id(tipo_do_arquivo, indice, id_original);
 
@@ -1122,10 +1138,12 @@ void alterar_do_arquivo_por_posicao(int tipo_do_arquivo, FILE *arq_entrada, cabe
         int novo_tam_reg = tamanho_total_do_registro(tipo_do_arquivo, reg);
 
         if (novo_tam_reg <= tam_reg) {
-            // Caso for alterar id para novo id, atualizar no indice
-            if (compare_strings_case_sensitive(nome_campos_alteracao[0], "id") == 0) {
+            // Caso for alterar id para novo id, atualizar no indice        
+            int id_pos = tem_id_onde(nome_campos_alteracao, n_campos_alteracao);
+
+            if (id_pos != -1) {
                 int id_original = get_id(reg);
-                int novo_id = atoi(valor_campos_alteracao[0]);
+                int novo_id = atoi(valor_campos_alteracao[id_pos]);
 
                 remover_do_indice_por_id(tipo_do_arquivo, indice, id_original);
 
