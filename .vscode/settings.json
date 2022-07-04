@@ -2,6 +2,7 @@
     "files.associations": {
         "stdio.h": "c",
         "stdlib.h": "c",
-        "registros.h": "c"
+        "registros.h": "c",
+        "arvore_b.h": "c"
     }
 }
