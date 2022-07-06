@@ -18,17 +18,6 @@ struct registro_ {
     string_t modelo;
 };
 
-// Aloca e retorna um array de caracteres lixo ('$') de tamanho indicado (sem '\0')
-char *cria_lixo(int tamLixo) {
-    char *lixo = (char *)malloc(tamLixo * sizeof(char));
-
-    for (int i = 0; i < tamLixo; i++) {
-        lixo[i] = '$';
-    }
-
-    return lixo;
-}
-
 registro_t *criar_registro() {
     registro_t *reg = (registro_t *)malloc(1 * sizeof(registro_t));
 

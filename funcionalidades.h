@@ -31,3 +31,9 @@ void funcionalidade7(int tipo_do_arquivo, string_t binario_entrada, string_t arq
 
 // Altera no arquivo de dados e de índice correspondente 'n_alteracoes' registro lidos especificados na entrada padrão
 void funcionalidade8(int tipo_do_arquivo, string_t binario_entrada, string_t arquivo_de_indice, int n_alteracoes);
+
+// Cria um arquivo de índice primário árvore B a partir de um arquivo de dados existente de tipo indicado
+// A chave primária é o campo id do registros de dados
+// Para o tipo1, guarda-se para cada chave primária o RRN do registro no arquivo de dados
+// Para o tipo2, guarda-se para cada chave primária o Byteoffset do registro no arquivo de dados
+void funcionalidade9(int tipo_do_arquivo, string_t arquivo_de_dados, string_t arquivo_de_indice);

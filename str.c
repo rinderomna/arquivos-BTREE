@@ -340,3 +340,13 @@ string_t clone_string(string_t original_string) {
 
     return str;
 }
+
+char *cria_lixo(int tamLixo) {
+    char *lixo = (char *)malloc(tamLixo * sizeof(char));
+
+    for (int i = 0; i < tamLixo; i++) {
+        lixo[i] = '$';
+    }
+
+    return lixo;
+}

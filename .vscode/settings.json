@@ -3,6 +3,9 @@
         "stdio.h": "c",
         "stdlib.h": "c",
         "registros.h": "c",
-        "arvore_b.h": "c"
+        "arvore_b.h": "c",
+        "ranges": "c",
+        "indice.h": "c",
+        "utils.h": "c"
     }
 }

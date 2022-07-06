@@ -1,4 +1,4 @@
-/* |Trabalho 2 de Arquivos - 2022/01|
+/* |Trabalho 3 de Arquivos - 2022/01|
  * Hélio Nogueira Cardoso         - N°USP: 10310227
  * Raphael David Philippe Leveque - N°USP: 12542522
  */
@@ -88,6 +88,12 @@ int main() {
 
             funcionalidade8(tipo, binario_entrada, arquivo_de_indice, n);
             break;
+        case 9:
+            binario_entrada = campos_de_comando[2];
+            binario_saida = campos_de_comando[3];
+
+            funcionalidade9(tipo, binario_entrada, binario_saida);
+            break;        
         default:
             break;
     }

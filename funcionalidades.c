@@ -5,6 +5,7 @@
 #include "cabecalhos.h"
 #include "registros.h"
 #include "indice.h"
+#include "arvore_b.h"
 #include "str.h"
 
 void binarioNaTela(string_t nomeArquivoBinario) { /* Você não precisa entender o código dessa função. */
@@ -1324,5 +1325,104 @@ void funcionalidade8(int tipo_do_arquivo, string_t binario_entrada, string_t arq
 
     // Imprimir binário na tela de Arquivo de Dados e Arquivo de Índice, respectivamente
     binarioNaTela(binario_entrada);
+    binarioNaTela(arquivo_de_indice);
+}
+
+// Cria um arquivo de índice primário árvore B a partir de um arquivo de dados existente de tipo indicado
+// A chave primária é o campo id do registros de dados
+// Para o tipo1, guarda-se para cada chave primária o RRN do registro no arquivo de dados
+// Para o tipo2, guarda-se para cada chave primária o Byteoffset do registro no arquivo de dados
+void funcionalidade9(int tipo_do_arquivo, string_t arquivo_de_dados, string_t arquivo_de_indice) {
+    FILE *arq_entrada = NULL;
+
+    arq_entrada = fopen(arquivo_de_dados, "rb");
+
+    if (!arq_entrada) {
+        printf("Falha no processamento do arquivo.\n");
+
+        return;
+    }
+    
+    // Ler do cabecalho status, proxRRN e proxByteOffset
+    cabecalho_t *cabecalho = criar_cabecalho();
+
+    ler_cabecalho_de_arquivo(cabecalho, tipo_do_arquivo, arq_entrada);
+    char status = get_status(cabecalho);
+    int proxRRN = get_proxRRN(cabecalho);
+    long long int proxByteOffset = get_proxByteOffset(cabecalho);
+
+    destruir_cabecalho(cabecalho);
+    
+    // Testar consistência do arquivo
+    if (status == '0') {
+        printf("Falha no processamento do arquivo.\n");
+        fclose(arq_entrada);
+
+        return;
+    }
+
+    //---------------------------------------------------------------------------------
+
+    // Criando arquivo de árvore para leitura e escrita:
+    FILE *arq_arvore = NULL;
+
+    arq_arvore = fopen(arquivo_de_indice, "r+b");
+
+    if (!arq_arvore) {
+        printf("Falha no processamento do arquivo.\n");
+
+        return;
+    }
+
+    // Criar cabeçalho de árvore inicializado com valores padrão:
+    cabecalho_arvore_t cab_arvore = criar_cabecalho_arvore(); // status '0' (inconsistente)
+    // Escrever cabeçalho inicialmente inconsistente
+    escrever_cabecalho_arvore(&cab_arvore, tipo_do_arquivo, arq_arvore);
+
+    // Ler sequencialmente o arquivo de dados salvando as informações no índice em RAM:
+
+    if (tipo_do_arquivo == 1) {
+        // Leitura sequencial dos registros adicionando no índice as informações dos não removidos:
+        for (int rrn = 0; rrn < proxRRN; rrn++) {
+            registro_t *reg = criar_registro();
+
+            ler_registro(reg, tipo_do_arquivo, arq_entrada);
+            
+            char removido = get_removido(reg);
+
+            if (removido == '0') {
+                chave_t nova_chave = {.id = get_id(reg), .RRN_dados = rrn};
+                inserir_chave_em_arvore(&nova_chave, tipo_do_arquivo, &cab_arvore, arq_arvore);
+            }
+
+            destruir_registro(reg, 1);
+        }
+    } else if (tipo_do_arquivo == 2) {
+        // Leitura sequencial dos registros adicionando no índice as informações dos não removidos:
+        long long int byteOffset_atual = TAM_CAB_2;
+        while (byteOffset_atual < proxByteOffset) {
+            registro_t *reg = criar_registro();
+
+            int tam_reg = ler_registro(reg, tipo_do_arquivo, arq_entrada);
+
+            char removido = get_removido(reg);
+
+            if (removido == '0') {
+                chave_t nova_chave = {.id = get_id(reg), .byteoffset_dados = byteOffset_atual};
+                inserir_chave_em_arvore(&nova_chave, tipo_do_arquivo, &cab_arvore, arq_arvore);
+            }
+
+            byteOffset_atual += tam_reg;
+            destruir_registro(reg, 1);
+        }
+    }    
+
+    // Escrever o cabeçalho da árvore atualizado
+    cab_arvore.status = '1';
+    escrever_cabecalho_arvore(&cab_arvore, tipo_do_arquivo, arq_arvore);
+    fclose(arq_arvore);
+    fclose(arq_entrada);
+
+    // Imprimir "identificação" do arquivo de índice árvore-B
     binarioNaTela(arquivo_de_indice);
 }
