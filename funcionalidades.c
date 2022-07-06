@@ -1366,7 +1366,7 @@ void funcionalidade9(int tipo_do_arquivo, string_t arquivo_de_dados, string_t ar
     // Criando arquivo de árvore para leitura e escrita:
     FILE *arq_arvore = NULL;
 
-    arq_arvore = fopen(arquivo_de_indice, "r+b");
+    arq_arvore = fopen(arquivo_de_indice, "w+b");
 
     if (!arq_arvore) {
         printf("Falha no processamento do arquivo.\n");
