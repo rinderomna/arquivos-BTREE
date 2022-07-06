@@ -964,6 +964,109 @@ void inserir_registro(int tipo_do_arquivo, FILE *arq_entrada, cabecalho_t *cabec
     adicionar_registro_a_indice(indice, ri);
 }
 
+// Insere registro em arquivo de dados e índice árvore-B correspondente, seguindo a devida lógica de reaproveitamento de espaço:
+// Tipo 1 -> Desempilha o último removido para reaproveitar, ou insere no final se não houver removidos
+// Tipo 2 -> Aplica Worst Fit para reaproveitar espaço, ou insere no final se não houver removidos ou se não couber em nenhum deles
+// Obs.: Arquivo de árvore-B deve já estar aberto para leitura e escrita
+void inserir_registro_arvore(int tipo_do_arquivo, FILE *arq_entrada, cabecalho_t *cabecalho, FILE *arq_arvore, cabecalho_arvore_t *cab_arvore, registro_t *registro_a_adicionar) {
+    // Criar chave que será adicionada ao índice árvore-B já setando id:
+    chave_t chave_a_adicionar = {.id = get_id(registro_a_adicionar)};
+
+    // Ler topo do cabecalho
+    long long int topo = get_topo(cabecalho);
+
+    if (tipo_do_arquivo == 1) { // desempilhar ou final
+        if (topo == -1) { 
+            // Inserir no final do arquivo
+            fseek(arq_entrada, 0, SEEK_END);
+            escrever_registro1_em_arquivo(registro_a_adicionar, arq_entrada);
+
+            // Setar este RRN na chave que será adicionada ao índice
+            int proxRRN = get_proxRRN(cabecalho);
+            chave_a_adicionar.RRN_dados = proxRRN;
+
+            // Alterar proxRRN no cabecalho
+            set_proxRRN(cabecalho, proxRRN + 1);
+        } else {
+            // Buscando o registro que será reutilizado no topo anterior
+            registro_t *registro_reutilizado = get_registro_em_posicao(tipo_do_arquivo, topo, arq_entrada);
+
+            // Atualizando topo para o próximo do registro que será reutilizado
+            set_topo(cabecalho, get_proxRRN_removido(registro_reutilizado));
+            destruir_registro(registro_reutilizado, 1);
+
+            // Escrever na posição do registro que está sendo reutilizado (topo anterior)
+            escrever_registro_em_posicao(tipo_do_arquivo, registro_a_adicionar, topo, arq_entrada); 
+
+            // Setar esta posicao na chave que será adicionada ao índice (topo anterior)
+            chave_a_adicionar.RRN_dados = (int)topo;
+
+            // Diminuir número de registros removidos
+            int nroRegRem = get_nroRegRem(cabecalho);
+            set_nroRegRem(cabecalho, nroRegRem - 1);
+        }
+    } else if (tipo_do_arquivo == 2) { // tirar da lista ou final
+        if (topo == -1) {
+            // Inserir no final do arquivo
+            fseek(arq_entrada, 0, SEEK_END);
+            int tam_reg = escrever_registro2_em_arquivo(registro_a_adicionar, arq_entrada);
+
+            // Setar este byteoffset na chave que será adicionada ao índice
+            int proxByteOffset = get_proxByteOffset(cabecalho);
+            chave_a_adicionar.byteoffset_dados = proxByteOffset;
+
+            // Alterar proxRRN no cabecalho
+            set_proxByteOffset(cabecalho, proxByteOffset + tam_reg);
+        } else { // Worst Fit
+            // Buscar o maior registro reutilizável no topo da lista ordenada
+            registro_t *maior_registro_reutilizavel = get_registro_em_posicao(tipo_do_arquivo, topo, arq_entrada);
+            
+            // Ler o tamanho deste maior reutilizável 
+            int tam_maior_reutilizavel = 0;
+            fseek(arq_entrada, topo + 1, SEEK_SET);
+            fread(&tam_maior_reutilizavel, sizeof(int), 1, arq_entrada);
+            tam_maior_reutilizavel += 5; // Incrementar 5 para contar os bytes iniciais
+
+            // Computar tamanho que o registro que será adicionado irá precisar
+            int tam_reg_a_adicionar = tamanho_total_do_registro(tipo_do_arquivo, registro_a_adicionar);
+
+            // Testar se o registro a ser adicionado cabe no maior espaço reutilizável
+            if (tam_reg_a_adicionar <= tam_maior_reutilizavel) { // Caso caiba, reaproveitar
+                // Posicionar ponteiro do arquivo onde irá reutilizar
+                fseek(arq_entrada, topo, SEEK_SET);
+
+                // Escrever em cima o registro sendo utilizado
+                reescrever_registro2_em_arquivo(registro_a_adicionar, tam_maior_reutilizavel, arq_entrada);
+
+                // Atualizar o topo para o próximo do registro que está sendo reutilizado
+                set_topo(cabecalho, get_proxByteOffset_removido(maior_registro_reutilizavel));
+
+                // Setar byteoffset do registro que está sendo reutilizado na chave de índice
+                chave_a_adicionar.byteoffset_dados = topo;
+
+                // Diminuir número de registros removidos
+                int nroRegRem = get_nroRegRem(cabecalho);
+                set_nroRegRem(cabecalho, nroRegRem - 1);
+            } else { // Não cabe -> Inserir no final
+                // Posicionar ponteiro no final do arquivo e escrever registro
+                fseek(arq_entrada, 0, SEEK_END);
+                int tam_reg = escrever_registro2_em_arquivo(registro_a_adicionar, arq_entrada);
+
+                // Setar este byteoffset na chave que será adionada ao índice
+                int proxByteOffset = get_proxByteOffset(cabecalho);
+                chave_a_adicionar.byteoffset_dados = proxByteOffset;  
+
+                // Alterar proxRRN no cabecalho
+                set_proxByteOffset(cabecalho, proxByteOffset + tam_reg);
+            }
+
+            destruir_registro(maior_registro_reutilizavel, 1);
+        }
+    }
+
+    inserir_chave_em_arvore(&chave_a_adicionar, tipo_do_arquivo, cab_arvore, arq_arvore);
+}
+
 // Insere no arquivo de dados e de índice correspondente 'n' novos registro lidos entrada padrão
 void funcionalidade7(int tipo_do_arquivo, string_t binario_entrada, string_t arquivo_de_indice, int n_insercoes) {
     // Abrir arquivo para leitura e escrita de binário
@@ -1424,5 +1527,96 @@ void funcionalidade9(int tipo_do_arquivo, string_t arquivo_de_dados, string_t ar
     fclose(arq_entrada);
 
     // Imprimir "identificação" do arquivo de índice árvore-B
+    binarioNaTela(arquivo_de_indice);
+}
+
+// Insere no arquivo de dados e de índice árvore-B correspondente 'n' novos registro lidos entrada padrão
+void funcionalidade11(int tipo_do_arquivo, string_t binario_entrada, string_t arquivo_de_indice, int n_insercoes) {
+    // Abrir arquivo para leitura e escrita de binário
+    FILE *arq_entrada = fopen(binario_entrada, "r+b");
+    if (!arq_entrada) {
+        printf("Falha no processamento do arquivo.\n");
+        return;
+    }
+
+    // Ler cabecalho e testar consistência
+    cabecalho_t *cabecalho = criar_cabecalho();
+
+    ler_cabecalho_de_arquivo(cabecalho, tipo_do_arquivo, arq_entrada);
+    char status = get_status(cabecalho);
+    
+    // Testar consistência do arquivo
+    if (status == '0') {
+        printf("Falha no processamento do arquivo.\n");
+        destruir_cabecalho(cabecalho);
+        fclose(arq_entrada);
+
+        return;
+    }
+
+    // Arquivo potencialmente inconsistente neste ponto
+    set_status(cabecalho, '0');
+    escrever_cabecalho_em_arquivo(cabecalho, tipo_do_arquivo, arq_entrada);
+
+    // Abrir arquivo de índice árvore-B para leitura e escrita
+    FILE *arq_arvore = NULL;
+
+    arq_arvore = fopen(arquivo_de_indice, "r+b");
+
+    if (!arq_arvore) {
+        printf("Falha no processamento do arquivo.\n");
+        destruir_cabecalho(cabecalho);
+        fclose(arq_entrada);
+
+        return;
+    } 
+
+    // Lê cabeçalho da arvore e testa a consistência
+    cabecalho_arvore_t cab_arvore = ler_cabecalho_arvore(arq_arvore, tipo_do_arquivo);
+
+    if (cab_arvore.status == '0') {
+        printf("Falha no processamento do arquivo.\n");
+        destruir_cabecalho(cabecalho);
+        fclose(arq_entrada);
+        fclose(arq_arvore);
+
+        return;
+    }
+
+    // Escrever cabeçalho da árvore inicialmente inconsistente
+    cab_arvore.status = '0';
+    escrever_cabecalho_arvore(&cab_arvore, tipo_do_arquivo, arq_arvore);
+
+    // Laço que realiza cada uma das inserções especificadas na entrada padrão
+    for (int insercao = 0; insercao < n_insercoes; insercao++) {
+        // Ler campos de novo registro da entrada padrão
+        string_t *campos = (string_t *)malloc(7 * sizeof(string_t));
+
+        for (int i = 0; i < 7; i++) {
+            campos[i] = scan_quote_string();
+        }
+
+        // Cria preenche e insere chave no arquivo de dados e índice árvore-B
+        registro_t *registro_a_adicionar = criar_registro();
+        preencher_registro(registro_a_adicionar, campos);
+        inserir_registro_arvore(tipo_do_arquivo, arq_entrada, cabecalho, arq_arvore, &cab_arvore, registro_a_adicionar);
+
+        destroy_string_array(campos, 7);
+        destruir_registro(registro_a_adicionar, 0);
+    }
+
+    // Arquivo consistente após todas as alterações realizadas:
+    set_status(cabecalho, '1'); 
+    escrever_cabecalho_em_arquivo(cabecalho, tipo_do_arquivo, arq_entrada);
+    destruir_cabecalho(cabecalho);
+
+    // Escrever o cabeçalho da árvore atualizado
+    cab_arvore.status = '1';
+    escrever_cabecalho_arvore(&cab_arvore, tipo_do_arquivo, arq_arvore);
+    fclose(arq_arvore);
+    fclose(arq_entrada);
+
+    // Imprimir binário na tela de Arquivo de Dados e Arquivo de Índice, respectivamente
+    binarioNaTela(binario_entrada);
     binarioNaTela(arquivo_de_indice);
 }

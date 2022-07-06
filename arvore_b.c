@@ -348,6 +348,7 @@ int inserir(int rrn_atual, chave_t chave, int *rrn_filho_dir_promo, chave_t *cha
 }
 
 void inserir_chave_em_arvore(chave_t *chave_a_inserir, int tipo_do_arquivo, cabecalho_arvore_t *cab_arvore, FILE *arq_arvore) {
+    printf("chave sendo adicionada: %d, %d\n", chave_a_inserir->id, chave_a_inserir->RRN_dados);
     if (cab_arvore->nroNos == 0) { // Árvore Vazia -> colocar 1 raiz
         // Cria nova raiz
         cab_arvore->nroNos++;

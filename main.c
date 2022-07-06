@@ -93,7 +93,18 @@ int main() {
             binario_saida = campos_de_comando[3];
 
             funcionalidade9(tipo, binario_entrada, binario_saida);
-            break;        
+            break;  
+        case 10:
+            break;
+        case 11:
+            binario_entrada = campos_de_comando[2];
+            arquivo_de_indice = campos_de_comando[3];
+            n = atoi(campos_de_comando[4]);
+
+            funcionalidade11(tipo, binario_entrada, arquivo_de_indice, n);
+            break;
+        case 12:
+            break;      
         default:
             break;
     }
