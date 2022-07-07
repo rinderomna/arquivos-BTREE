@@ -5,4 +5,4 @@ all: $(objects)
 run:
 	./bin
 restore:
-	cp antes/* binarios/
+	cp antes/* .

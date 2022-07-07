@@ -39,22 +39,22 @@ no_arvore_t criar_no_arvore() {
 void escrever_cabecalho_arvore(cabecalho_arvore_t *cab_arvore, int tipo_do_arquivo, FILE *arq_arvore) {
     // Posicionar ponteiro no início do arquivo da árvore
     fseek(arq_arvore, 0, SEEK_SET);
-    
+
     // Escrever status
     fwrite(&cab_arvore->status, 1, sizeof(char), arq_arvore);
 
     // Escrever nó raiz
     fwrite(&cab_arvore->noRaiz, 1, sizeof(int), arq_arvore);
-    
+
     // Escrever próximo RRN
     fwrite(&cab_arvore->proxRRN, 1, sizeof(int), arq_arvore);
-    
+
     // Escrever número de nós
     fwrite(&cab_arvore->nroNos, 1, sizeof(int), arq_arvore);
 
     // Completar com lixo
     char *lixo = NULL;
-    
+
     if (tipo_do_arquivo == 1) {
         lixo = cria_lixo(TAM_REG1_ARV - 13);
         fwrite(lixo, TAM_REG1_ARV - 13, sizeof(char), arq_arvore);
@@ -78,10 +78,10 @@ cabecalho_arvore_t ler_cabecalho_arvore(FILE *arq_arvore, int tipo_do_arquivo) {
 
     // Escrever nó raiz
     fread(&cab_arvore.noRaiz, 1, sizeof(int), arq_arvore);
-    
+
     // Escrever próximo RRN
     fread(&cab_arvore.proxRRN, 1, sizeof(int), arq_arvore);
-    
+
     // Escrever número de nós
     fread(&cab_arvore.nroNos, 1, sizeof(int), arq_arvore);
 
@@ -167,7 +167,7 @@ long long int busca_binaria_no_no(int id, int tipo_do_arquivo, no_arvore_t *no_a
 
     int lim_esq = 0;
     int lim_dir = no_arvore->nroChaves - 1;
-    
+
     while (lim_dir - lim_esq > 1) {
         int meio = (lim_esq + lim_dir) / 2;
 
@@ -176,7 +176,7 @@ long long int busca_binaria_no_no(int id, int tipo_do_arquivo, no_arvore_t *no_a
         } else {
             lim_dir = meio;
         }
-    }    
+    }
 
     if (no_arvore->chaves[lim_esq].id == id) {
         if (pos) *pos = lim_esq;
@@ -253,7 +253,7 @@ void split(chave_t *nova_chave, int *filho_direito, no_arvore_t *no, chave_t *ch
     cab_arvore->nroNos++;
     *novo_no = criar_no_arvore();
     novo_no->RRN_arvore = (cab_arvore->proxRRN)++;
-    if ((no->tipoNo == RAIZ && no->ponteiros[pos] == NIL) || no->tipoNo == FOLHA) { 
+    if ((no->tipoNo == RAIZ && no->ponteiros[pos] == NIL) || no->tipoNo == FOLHA) {
         // "RAIZ-FOLHA" ou FOLHA vira FOLHA
         no->tipoNo = FOLHA;
     } else {
@@ -268,7 +268,7 @@ void split(chave_t *nova_chave, int *filho_direito, no_arvore_t *no, chave_t *ch
     *chave_promo = no_de_trabalho.chaves[2];
     // Setar RRN do filho direito do promovido como o RRN do novo nó à direita
     *rrn_filho_dir_promo = novo_no->RRN_arvore;
-    
+
     // <-- 0 1 | ^^ 2 ^^ | 3 -->
 
     chave_t chave_nula = {.id = NIL, .RRN_dados = NIL, .byteoffset_dados = NIL};
@@ -309,7 +309,7 @@ int inserir(int rrn_atual, chave_t chave, int *rrn_filho_dir_promo, chave_t *cha
     if (posicao_de_retorno != NIL) { // Chave já existente, retornar erro
         return ERRO;
     }
- 
+
     chave_t p_b_key = {};
     int p_b_rrn = NIL;
 
@@ -348,7 +348,6 @@ int inserir(int rrn_atual, chave_t chave, int *rrn_filho_dir_promo, chave_t *cha
 }
 
 void inserir_chave_em_arvore(chave_t *chave_a_inserir, int tipo_do_arquivo, cabecalho_arvore_t *cab_arvore, FILE *arq_arvore) {
-    printf("chave sendo adicionada: %d, %d\n", chave_a_inserir->id, chave_a_inserir->RRN_dados);
     if (cab_arvore->nroNos == 0) { // Árvore Vazia -> colocar 1 raiz
         // Cria nova raiz
         cab_arvore->nroNos++;
@@ -369,7 +368,7 @@ void inserir_chave_em_arvore(chave_t *chave_a_inserir, int tipo_do_arquivo, cabe
 
         return;
     }
-    
+
     int rrn_raiz = cab_arvore->noRaiz;
 
     int rrn_filho_dir_promo = NIL;
@@ -387,7 +386,7 @@ void inserir_chave_em_arvore(chave_t *chave_a_inserir, int tipo_do_arquivo, cabe
 
         // Colocar chave promovida no novo nó raiz
         nova_raiz.chaves[0] = chave_promo;
-    
+
         // Filho Esquerdo: raiz anterior
         nova_raiz.ponteiros[0] = rrn_raiz;
         // Filho Direito: filho direito da chave promovida
