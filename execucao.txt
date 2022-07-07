@@ -1,0 +1,56 @@
+Testando caso 1
+resultado
+28841.940000
+resposta
+28841.940000
+
+Testando caso 2
+resultado
+34955.420000
+resposta
+34955.420000
+
+Testando caso 3
+resultado
+14608.580000
+resposta
+14608.580000
+
+Testando caso 4
+resultado
+17467.030000
+resposta
+17467.030000
+
+Testando caso 5
+resultado
+24515.840000
+14592.330000
+resposta
+24515.840000
+14592.330000
+
+Testando caso 6
+resultado
+24014.030000
+13141.180000
+resposta
+24014.030000
+13141.180000
+
+Testando caso 7
+resultado
+19325.490000
+15674.500000
+resposta
+19325.490000
+15674.500000
+
+Testando caso 8
+resultado
+19398.440000
+15563.350000
+resposta
+19398.440000
+15563.350000
+
