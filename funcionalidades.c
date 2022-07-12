@@ -1571,6 +1571,8 @@ void funcionalidade11(int tipo_do_arquivo, string_t binario_entrada, string_t ar
         return;
     } 
 
+    //---------------------------------------------------------------------------------
+
     // Lê cabeçalho da arvore e testa a consistência
     cabecalho_arvore_t cab_arvore = ler_cabecalho_arvore(arq_arvore, tipo_do_arquivo);
 
@@ -1619,4 +1621,62 @@ void funcionalidade11(int tipo_do_arquivo, string_t binario_entrada, string_t ar
     // Imprimir binário na tela de Arquivo de Dados e Arquivo de Índice, respectivamente
     binarioNaTela(binario_entrada);
     binarioNaTela(arquivo_de_indice);
+}
+
+void funcionalidade10(int tipo_do_arquivo, string_t binario_entrada, string_t arquivo_de_indice, int id) {
+    // Abrir arquivo para leitura de binário
+    FILE *arq_entrada = fopen(binario_entrada, "rb");
+    if (!arq_entrada) {
+        printf("Falha no processamento do arquivo.\n");
+        return;
+    }
+
+    // Ler cabecalho e testar consistência
+    cabecalho_t *cabecalho = criar_cabecalho();
+
+    ler_cabecalho_de_arquivo(cabecalho, tipo_do_arquivo, arq_entrada);
+    char status = get_status(cabecalho);
+    destruir_cabecalho(cabecalho);
+    
+    // Testar consistência do arquivo
+    if (status == '0') {
+        printf("Falha no processamento do arquivo.\n");
+        fclose(arq_entrada);
+
+        return;
+    }
+
+    // Abrir arquivo de índice árvore-B para leitura
+    FILE *arq_arvore = NULL;
+
+    arq_arvore = fopen(arquivo_de_indice, "rb");
+
+    if (!arq_arvore) {
+        printf("Falha no processamento do arquivo.\n");
+        fclose(arq_entrada);
+
+        return;
+    } 
+
+    //---------------------------------------------------------------------------------
+
+    long long int pos_reg_buscado = buscar_por_id_na_arvore(id, tipo_do_arquivo, arq_arvore);
+
+
+    if (pos_reg_buscado == NIL) {
+        printf("Registro inexistente.\n");
+    } else {
+        registro_t *reg = criar_registro();
+        long long int byte_offset = pos_reg_buscado;
+        if (tipo_do_arquivo == 1) {
+            byte_offset = TAM_CAB_1 + pos_reg_buscado * TAM_REG1;
+        }
+        fseek(arq_entrada, byte_offset, SEEK_SET);
+        ler_registro(reg, tipo_do_arquivo, arq_entrada);
+        imprimir_registro(reg);
+        destruir_registro(reg, 1);
+    }
+
+    fclose(arq_arvore);
+    fclose(arq_entrada);
 }
