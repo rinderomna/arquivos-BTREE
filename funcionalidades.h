@@ -38,6 +38,7 @@ void funcionalidade8(int tipo_do_arquivo, string_t binario_entrada, string_t arq
 // Para o tipo2, guarda-se para cada chave primária o Byteoffset do registro no arquivo de dados
 void funcionalidade9(int tipo_do_arquivo, string_t arquivo_de_dados, string_t arquivo_de_indice);
 
+// Busca um id na árvore-B e em seguida imprime o registro encontrado
 void funcionalidade10(int tipo_do_arquivo, string_t binario_entrada, string_t arquivo_de_indice, int id);
 
 // Insere no arquivo de dados e de índice árvore-B correspondente 'n' novos registro lidos entrada padrão

@@ -1623,6 +1623,7 @@ void funcionalidade11(int tipo_do_arquivo, string_t binario_entrada, string_t ar
     binarioNaTela(arquivo_de_indice);
 }
 
+// Busca um id na árvore-B e em seguida imprime o registro encontrado
 void funcionalidade10(int tipo_do_arquivo, string_t binario_entrada, string_t arquivo_de_indice, int id) {
     // Abrir arquivo para leitura de binário
     FILE *arq_entrada = fopen(binario_entrada, "rb");
@@ -1660,8 +1661,10 @@ void funcionalidade10(int tipo_do_arquivo, string_t binario_entrada, string_t ar
 
     //---------------------------------------------------------------------------------
 
+    // A função buscar_por_id_na_arvore retorna a posicao do registro na árvore-B
+    // Se o arquivo for do tipo 1, retorna o rrn
+    // Se for do tipo 2, retorna o byteoffset
     long long int pos_reg_buscado = buscar_por_id_na_arvore(id, tipo_do_arquivo, arq_arvore);
-
 
     if (pos_reg_buscado == NIL) {
         printf("Registro inexistente.\n");

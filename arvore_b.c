@@ -205,7 +205,7 @@ long long int busca_binaria_no_no(int id, int tipo_do_arquivo, no_arvore_t *no_a
 // Retorna -1 se não encontrou ou a referência adequada para o arquivo de dados (RRN ou Byteoffset).
 // Retorna por referência a posição:
 //      Caso o id tenha sido encontrado, ele representa a posição no vetor de chaves do nó em que ele foi encontrado.
-//      Caso o id não tenha sido encontrado, ele represente a posição no vetor de ponteiros do ponteiro que a busca deve seguir.
+//      Caso o id não tenha sido encontrado, ele representa a posição no vetor de ponteiros do ponteiro que a busca deve seguir.
 long long int buscar_por_id_na_arvore(int id, int tipo_do_arquivo, FILE *arq_arvore) {
     cabecalho_arvore_t cab_arvore = ler_cabecalho_arvore(arq_arvore, tipo_do_arquivo);
 
