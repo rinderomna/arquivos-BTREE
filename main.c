@@ -29,6 +29,7 @@ int main() {
     string_t arquivo_de_indice;
     int RRN;
     int n;
+    int id;
 
     tipo_do_arquivo = campos_de_comando[1];
     int tipo = 0;
@@ -95,6 +96,11 @@ int main() {
             funcionalidade9(tipo, binario_entrada, binario_saida);
             break;  
         case 10:
+            binario_entrada = campos_de_comando[2];
+            arquivo_de_indice = campos_de_comando[3];
+            id = atoi(campos_de_comando[5]);
+
+            funcionalidade10(tipo, binario_entrada, arquivo_de_indice, id);
             break;
         case 11:
             binario_entrada = campos_de_comando[2];
@@ -102,9 +108,7 @@ int main() {
             n = atoi(campos_de_comando[4]);
 
             funcionalidade11(tipo, binario_entrada, arquivo_de_indice, n);
-            break;
-        case 12:
-            break;      
+            break;  
         default:
             break;
     }

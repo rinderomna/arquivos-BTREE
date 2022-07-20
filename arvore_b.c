@@ -203,34 +203,34 @@ long long int busca_binaria_no_no(int id, int tipo_do_arquivo, no_arvore_t *no_a
 
 // Busca por chave com id indicado na árvore toda.
 // Retorna -1 se não encontrou ou a referência adequada para o arquivo de dados (RRN ou Byteoffset).
-// Retorna por referência o indice:
+// Retorna por referência a posição:
 //      Caso o id tenha sido encontrado, ele representa a posição no vetor de chaves do nó em que ele foi encontrado.
-//      Caso o id não tenha sido encontrado, ele represente a posição no vetor de ponteiros do ponteiro que a busca deve seguir.
-// Também retorna por referência o ultimo nó analisado, atualizando o campo que indica RRN no arquivo da árvore.
-long long int buscar_por_id_na_arvore(int id, int tipo_do_arquivo, FILE *arq_arvore, int *indice, no_arvore_t *ultimo_no) {
+//      Caso o id não tenha sido encontrado, ele representa a posição no vetor de ponteiros do ponteiro que a busca deve seguir.
+long long int buscar_por_id_na_arvore(int id, int tipo_do_arquivo, FILE *arq_arvore) {
     cabecalho_arvore_t cab_arvore = ler_cabecalho_arvore(arq_arvore, tipo_do_arquivo);
 
-    if (cab_arvore.nroNos == 0) return -1; // Árvore vazia -> não encontrou
+    if (cab_arvore.nroNos == 0) return NIL; // Árvore vazia -> não encontrou
 
     int rrn_atual = cab_arvore.noRaiz;
 
-    while (rrn_atual != -1) {
+    while (rrn_atual != NIL) {
         // Posicionar na raiz e ler nó da árvore
 
         posicionar_em_rrn_arvore(arq_arvore, tipo_do_arquivo, rrn_atual);
-        *ultimo_no = ler_no_arvore(tipo_do_arquivo, arq_arvore);
-        ultimo_no->RRN_arvore = rrn_atual;
+        no_arvore_t no_atual = ler_no_arvore(tipo_do_arquivo, arq_arvore);
+        no_atual.RRN_arvore = rrn_atual;
 
-        long long int posicao_de_retorno = busca_binaria_no_no(id, tipo_do_arquivo, ultimo_no, indice);
+        int pos;
+        long long int posicao_de_retorno = busca_binaria_no_no(id, tipo_do_arquivo, &no_atual, &pos);
 
         // Se encontrou, retornar a devida posição do arquivo de dados
         if (posicao_de_retorno != -1) return posicao_de_retorno;
 
         // Se não encontrou, continua busca para descendente adequado
-        rrn_atual = ultimo_no->ponteiros[*indice];
+        rrn_atual = no_atual.ponteiros[pos];
     }
 
-    return -1; // Id não foi encontrado na árvore
+    return NIL; // Id não foi encontrado na árvore
 }
 
 void split(chave_t *nova_chave, int *filho_direito, no_arvore_t *no, chave_t *chave_promo, int *rrn_filho_dir_promo, no_arvore_t *novo_no, int tipo_do_arquivo, cabecalho_arvore_t *cab_arvore) {
@@ -319,8 +319,9 @@ int inserir(int rrn_atual, chave_t chave, int *rrn_filho_dir_promo, chave_t *cha
         return valor_de_retorno;
     }
 
+    // Teve promoção
     if (no.nroChaves < 3) { // Tem espaço no nó -> Inserir ordenado
-        for (int i = no.nroChaves - 1; i >= pos; i--) { // Shiftada para esquerda
+        for (int i = no.nroChaves - 1; i >= pos; i--) { // Shiftada para direita
             no.chaves[i + 1] = no.chaves[i];
             no.ponteiros[i + 2] = no.ponteiros[i + 1];
         }
@@ -376,6 +377,7 @@ void inserir_chave_em_arvore(chave_t *chave_a_inserir, int tipo_do_arquivo, cabe
 
     int valor_de_retorno = inserir(cab_arvore->noRaiz, *chave_a_inserir, &rrn_filho_dir_promo, &chave_promo, tipo_do_arquivo, cab_arvore, arq_arvore);
 
+    // Overflow no nó raiz
     if (valor_de_retorno == PROMO) {
         // Cria nova raiz
         cab_arvore->nroNos++;
