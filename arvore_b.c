@@ -233,6 +233,7 @@ long long int buscar_por_id_na_arvore(int id, int tipo_do_arquivo, FILE *arq_arv
     return NIL; // Id não foi encontrado na árvore
 }
 
+// Realiza o particionamento de um nó que já estava cheio e agora irá receber uma nova chave
 void split(chave_t *nova_chave, int *filho_direito, no_arvore_t *no, chave_t *chave_promo, int *rrn_filho_dir_promo, no_arvore_t *novo_no, int tipo_do_arquivo, cabecalho_arvore_t *cab_arvore) {
     no_arvore_t no_de_trabalho = *no; // copia chaves e ponteiros para nó de trabalho
 
@@ -292,7 +293,7 @@ void split(chave_t *nova_chave, int *filho_direito, no_arvore_t *no, chave_t *ch
     novo_no->ponteiros[3] = NIL;
 }
 
-int inserir(int rrn_atual, chave_t chave, int *rrn_filho_dir_promo, chave_t *chave_promo, int tipo_do_arquivo, cabecalho_arvore_t *cab_arvore, FILE *arq_arvore) {
+int inserir_recursivo(int rrn_atual, chave_t chave, int *rrn_filho_dir_promo, chave_t *chave_promo, int tipo_do_arquivo, cabecalho_arvore_t *cab_arvore, FILE *arq_arvore) {
     if (rrn_atual == NIL) { // Construção a partir de nós folha
         *chave_promo = chave;
         *rrn_filho_dir_promo = NIL;
@@ -310,10 +311,10 @@ int inserir(int rrn_atual, chave_t chave, int *rrn_filho_dir_promo, chave_t *cha
         return ERRO;
     }
 
-    chave_t p_b_key = {};
-    int p_b_rrn = NIL;
+    chave_t chave_promovida_debaixo = {};
+    int rrn_promovido_debaixo = NIL;
 
-    int valor_de_retorno = inserir(no.ponteiros[pos], chave, &p_b_rrn, &p_b_key, tipo_do_arquivo, cab_arvore, arq_arvore);
+    int valor_de_retorno = inserir_recursivo(no.ponteiros[pos], chave, &rrn_promovido_debaixo, &chave_promovida_debaixo, tipo_do_arquivo, cab_arvore, arq_arvore);
 
     if (valor_de_retorno == SEM_PROMO || valor_de_retorno == ERRO) {
         return valor_de_retorno;
@@ -326,8 +327,8 @@ int inserir(int rrn_atual, chave_t chave, int *rrn_filho_dir_promo, chave_t *cha
             no.ponteiros[i + 2] = no.ponteiros[i + 1];
         }
 
-        no.chaves[pos] = p_b_key;
-        no.ponteiros[pos + 1] = p_b_rrn;
+        no.chaves[pos] = chave_promovida_debaixo;
+        no.ponteiros[pos + 1] = rrn_promovido_debaixo;
         no.nroChaves++;
 
         posicionar_em_rrn_arvore(arq_arvore, tipo_do_arquivo, rrn_atual);
@@ -336,7 +337,7 @@ int inserir(int rrn_atual, chave_t chave, int *rrn_filho_dir_promo, chave_t *cha
         return SEM_PROMO;
     } else { // Overflow -> split
         no_arvore_t novo_no;
-        split(&p_b_key, &p_b_rrn, &no, chave_promo, rrn_filho_dir_promo, &novo_no, tipo_do_arquivo, cab_arvore);
+        split(&chave_promovida_debaixo, &rrn_promovido_debaixo, &no, chave_promo, rrn_filho_dir_promo, &novo_no, tipo_do_arquivo, cab_arvore);
 
         posicionar_em_rrn_arvore(arq_arvore, tipo_do_arquivo, rrn_atual);
         escrever_no_arvore(&no, tipo_do_arquivo, arq_arvore);
@@ -348,6 +349,7 @@ int inserir(int rrn_atual, chave_t chave, int *rrn_filho_dir_promo, chave_t *cha
     }
 }
 
+// Insere chave em árvore-B. As alterações no cabeçalho são feitas apenas em RAM, tendo de escrevê-las depois.
 void inserir_chave_em_arvore(chave_t *chave_a_inserir, int tipo_do_arquivo, cabecalho_arvore_t *cab_arvore, FILE *arq_arvore) {
     if (cab_arvore->nroNos == 0) { // Árvore Vazia -> colocar 1 raiz
         // Cria nova raiz
@@ -375,7 +377,7 @@ void inserir_chave_em_arvore(chave_t *chave_a_inserir, int tipo_do_arquivo, cabe
     int rrn_filho_dir_promo = NIL;
     chave_t chave_promo = {};
 
-    int valor_de_retorno = inserir(cab_arvore->noRaiz, *chave_a_inserir, &rrn_filho_dir_promo, &chave_promo, tipo_do_arquivo, cab_arvore, arq_arvore);
+    int valor_de_retorno = inserir_recursivo(cab_arvore->noRaiz, *chave_a_inserir, &rrn_filho_dir_promo, &chave_promo, tipo_do_arquivo, cab_arvore, arq_arvore);
 
     // Overflow no nó raiz
     if (valor_de_retorno == PROMO) {
@@ -401,41 +403,4 @@ void inserir_chave_em_arvore(chave_t *chave_a_inserir, int tipo_do_arquivo, cabe
     }
 
     cab_arvore->noRaiz = rrn_raiz;
-}
-
-int remover(int rrn_atual, int id_a_remover, int tipo_do_arquivo, cabecalho_arvore_t *cab_arvore, FILE *arq_arvore) {
-    if (rrn_atual == NIL) {
-        return NAO_ENCONTROU; // Chave não encontrada;
-    }
-
-    // Ler o nó atual
-    posicionar_em_rrn_arvore(arq_arvore, tipo_do_arquivo, rrn_atual);
-    no_arvore_t no = ler_no_arvore(tipo_do_arquivo, arq_arvore);
-
-    // Busca id no nó
-    int pos = NIL;
-    if (busca_binaria_no_no(id_a_remover, tipo_do_arquivo, &no, &pos) == NIL) { // Não encontrou, passar para filho adequado
-        return remover(no.ponteiros[pos], id_a_remover, tipo_do_arquivo, cab_arvore, arq_arvore);
-    }
-
-    // Id encontrado no nó -> remover
-    if (no.ponteiros[0] == NIL && no.nroChaves > 1) { // Remoção de folha ou raiz-folha sem causar underflow
-        for (int i = pos; i < no.nroChaves - 1; i++) {
-            no.chaves[i] = no.chaves[i + 1];
-        }
-
-        no.chaves[no.nroChaves - 1].id = NIL;
-        no.chaves[no.nroChaves - 1].RRN_dados = NIL;
-        no.chaves[no.nroChaves - 1].byteoffset_dados = NIL;
-
-        no.nroChaves--;
-
-        return REMOVIDO;
-    }
-
-    if (no.ponteiros[0] == NIL && no.nroChaves == 1) { // Remoção de folha ou raiz-folha causando underflow
-        // Redistribuição
-        
-    }
-    
 }

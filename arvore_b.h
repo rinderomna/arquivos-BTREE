@@ -4,13 +4,6 @@
 
 #define NIL -1
 
-enum retorno_remocao {
-    NAO_ENCONTROU,
-    REDISTRIBUICAO,
-    CONCATENACAO,
-    REMOVIDO
-};
-
 enum valor_de_retorno {
     SEM_PROMO,
     PROMO,
@@ -73,6 +66,8 @@ no_arvore_t ler_no_arvore(int tipo_do_arquivo, FILE *arq_arvore);
 //      Caso o id não tenha sido encontrado, ele representa a posição no vetor de ponteiros do ponteiro que a busca deve seguir.
 long long int buscar_por_id_na_arvore(int id, int tipo_do_arquivo, FILE *arq_arvore);
 
+// Insere chave em árvore-B. As alterações no cabeçalho são feitas apenas em RAM, tendo de escrevê-las depois.
 void inserir_chave_em_arvore(chave_t *chave_a_inserir, int tipo_do_arquivo, cabecalho_arvore_t *cab_arvore, FILE *arq_arvore);
 
+// Realiza o particionamento de um nó que já estava cheio e agora irá receber uma nova chave
 void split(chave_t *nova_chave, int *filho_direito, no_arvore_t *no, chave_t *chave_promo, int *rrn_filho_dir_promo, no_arvore_t *novo_no, int tipo_do_arquivo, cabecalho_arvore_t *cab_arvore);
