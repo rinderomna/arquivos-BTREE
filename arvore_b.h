@@ -4,6 +4,13 @@
 
 #define NIL -1
 
+enum retorno_remocao {
+    NAO_ENCONTROU,
+    REDISTRIBUICAO,
+    CONCATENACAO,
+    REMOVIDO
+};
+
 enum valor_de_retorno {
     SEM_PROMO,
     PROMO,

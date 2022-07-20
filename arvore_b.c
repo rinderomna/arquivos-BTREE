@@ -400,3 +400,40 @@ void inserir_chave_em_arvore(chave_t *chave_a_inserir, int tipo_do_arquivo, cabe
 
     cab_arvore->noRaiz = rrn_raiz;
 }
+
+int remover(int rrn_atual, int id_a_remover, int tipo_do_arquivo, cabecalho_arvore_t *cab_arvore, FILE *arq_arvore) {
+    if (rrn_atual == NIL) {
+        return NAO_ENCONTROU; // Chave não encontrada;
+    }
+
+    // Ler o nó atual
+    posicionar_em_rrn_arvore(arq_arvore, tipo_do_arquivo, rrn_atual);
+    no_arvore_t no = ler_no_arvore(tipo_do_arquivo, arq_arvore);
+
+    // Busca id no nó
+    int pos = NIL;
+    if (busca_binaria_no_no(id_a_remover, tipo_do_arquivo, &no, &pos) == NIL) { // Não encontrou, passar para filho adequado
+        return remover(no.ponteiros[pos], id_a_remover, tipo_do_arquivo, cab_arvore, arq_arvore);
+    }
+
+    // Id encontrado no nó -> remover
+    if (no.ponteiros[0] == NIL && no.nroChaves > 1) { // Remoção de folha ou raiz-folha sem causar underflow
+        for (int i = pos; i < no.nroChaves - 1; i++) {
+            no.chaves[i] = no.chaves[i + 1];
+        }
+
+        no.chaves[no.nroChaves - 1].id = NIL;
+        no.chaves[no.nroChaves - 1].RRN_dados = NIL;
+        no.chaves[no.nroChaves - 1].byteoffset_dados = NIL;
+
+        no.nroChaves--;
+
+        return REMOVIDO;
+    }
+
+    if (no.ponteiros[0] == NIL && no.nroChaves == 1) { // Remoção de folha ou raiz-folha causando underflow
+        // Redistribuição
+        
+    }
+    
+}
